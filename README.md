@@ -1,6 +1,6 @@
-# NiyoJan - Master Your Finances 🚀
+# MySpendCraft - Master Your Finances 🚀
 
-NiyoJan is a premium personal finance management application built with the MERN stack. It allows users to track expenses, manage bills, and visualize their financial health through a sleek, modern dashboard. It also features a robust Admin Panel for system monitoring and user management.
+MySpendCraft is a premium personal finance management application built with the MERN stack. It allows users to track expenses, manage bills, and visualize their financial health through a sleek, modern dashboard. It also features a robust Admin Panel for system monitoring and user management.
 
 ## ✨ Features
 
@@ -32,8 +32,8 @@ NiyoJan is a premium personal finance management application built with the MERN
 
 1.  **Clone the repository**:
     ```bash
-    git clone https://github.com/yourusername/niyojan.git
-    cd niyojan
+    git clone https://github.com/yourusername/myspendcraft.git
+    cd MySpendCraft
     ```
 
 2.  **Server Setup**:
