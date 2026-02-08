@@ -1,0 +1,209 @@
+.features-container {
+    background: transparent;
+    /* Changed to transparent to show grid body bg */
+    color: #94a3b8;
+    min-height: auto;
+    /* Allow fit content */
+    font-family: 'Inter', sans-serif;
+    padding-bottom: 60px;
+}
+
+.features-hero {
+    padding: 80px 5%;
+    text-align: center;
+    background: radial-gradient(circle at 50% 0%, rgba(249, 115, 22, 0.15) 0%, transparent 60%);
+}
+
+.features-hero h1 {
+    font-size: clamp(32px, 5vw, 56px);
+    font-weight: 800;
+    color: white;
+    letter-spacing: -2px;
+    line-height: 1.1;
+    margin-bottom: 16px;
+}
+
+.features-hero p {
+    font-size: 16px;
+    max-width: 600px;
+    margin: 0 auto;
+    line-height: 1.6;
+}
+
+/* Grid Layout for Steps */
+.features-steps-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+    padding: 0 8% 80px;
+}
+
+.feature-step-card-wrapper {
+    display: flex;
+}
+
+.step-card {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    background: #0f172a;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 24px;
+    padding: 32px;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    width: 100%;
+}
+
+.step-card:hover {
+    border-color: rgba(249, 115, 22, 0.3);
+    box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.5);
+    transform: translateY(-4px);
+}
+
+.step-badge {
+    background: rgba(249, 115, 22, 0.1);
+    color: #f97316;
+    padding: 6px 16px;
+    border-radius: 100px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    display: inline-block;
+    margin-bottom: 12px;
+    border: 1px solid rgba(249, 115, 22, 0.2);
+}
+
+.step-content h2 {
+    font-size: 24px;
+    font-weight: 800;
+    color: white;
+    margin-bottom: 12px;
+    letter-spacing: -0.5px;
+}
+
+.step-content p {
+    font-size: 14.5px;
+    line-height: 1.6;
+    margin-bottom: 20px;
+    color: #94a3b8;
+}
+
+.feature-list {
+    list-style: none;
+    padding: 0;
+}
+
+.feature-list li {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+    font-size: 14px;
+    color: #cbd5e1;
+    font-weight: 500;
+}
+
+.feature-list li svg {
+    color: #f97316;
+    /* Blue checks */
+    flex-shrink: 0;
+}
+
+/* Visual Mocks */
+.step-visual {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.mock-ui {
+    background: #020617;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    width: 100%;
+    max-width: 340px;
+    /* Reduced width */
+    padding: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    position: relative;
+}
+
+.mock-card {
+    background: #1e293b;
+    border-radius: 12px;
+    padding: 12px;
+    margin-bottom: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.mock-chart-container {
+    height: 140px;
+    /* Reduced height */
+    display: flex;
+    align-items: flex-end;
+    gap: 6px;
+    padding: 10px;
+}
+
+.mock-bar {
+    background: linear-gradient(to top, rgba(249, 115, 22, 0.2), #f97316);
+    border-radius: 4px;
+    width: 100%;
+}
+
+/* CTA Section */
+.features-cta {
+    padding: 80px 5%;
+    text-align: center;
+    background: linear-gradient(to bottom, transparent, rgba(249, 115, 22, 0.05));
+    border-radius: 40px 40px 0 0;
+}
+
+.features-cta h2 {
+    font-size: 42px;
+    font-weight: 800;
+    color: white;
+    margin-bottom: 32px;
+    letter-spacing: -2px;
+}
+
+@media (max-width: 900px) {
+    .features-steps-grid {
+        grid-template-columns: 1fr;
+        padding: 0 5% 60px;
+    }
+
+    .step-card {
+        padding: 24px;
+    }
+}
+
+.learn-more {
+    margin-top: 20px;
+    background: none;
+    border: none;
+    color: #10b981;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 16px;
+    padding: 0;
+}
+
+.learn-more:hover {
+    text-decoration: underline;
+}
+
+.details-panel {
+    margin-top: 20px;
+    padding: 20px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    animation: slideUp 0.3s ease-out;
+}
