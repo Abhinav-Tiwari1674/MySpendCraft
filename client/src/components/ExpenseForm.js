@@ -396,6 +396,7 @@ const ExpenseForm = ({ onAddExpense, expenseToEdit, onUpdateExpense, clearEdit, 
                         onChange={handleChange}
                         onFocus={() => setIsFocused('amount')}
                         onBlur={() => setIsFocused('')}
+                        onWheel={(e) => e.target.blur()}
                         required
                         style={{
                             ...inputFocusStyle('amount'),

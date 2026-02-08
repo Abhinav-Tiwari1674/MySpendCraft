@@ -92,6 +92,7 @@ const SavingsGoal = ({ monthlySavings }) => {
                             placeholder="Target Amount"
                             value={tempGoal.target}
                             onChange={(e) => setTempGoal({ ...tempGoal, target: Number(e.target.value) })}
+                            onWheel={(e) => e.target.blur()}
                             style={{ fontSize: '14px', height: '45px', paddingLeft: '35px', background: 'var(--bg-body)' }}
                         />
                     </div>

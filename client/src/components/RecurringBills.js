@@ -103,6 +103,7 @@ const RecurringBills = () => {
                             className="form-control"
                             value={formData.amount}
                             onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                            onWheel={(e) => e.target.blur()}
                             required
                             style={{ height: '48px', fontSize: '14px', flex: 1, minWidth: 0, padding: '0 15px' }}
                         />

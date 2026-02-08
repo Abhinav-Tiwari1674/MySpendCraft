@@ -59,7 +59,7 @@ const NewspaperTracker = ({ allExpenses, onAddExpense, onDeleteExpense, selected
             {isConfiguring && (
                 <div className="fade-in" style={{ padding: '15px', background: 'var(--bg-body)', borderRadius: '12px', marginBottom: '20px', border: '1px solid var(--border)' }}>
                     <label style={{ fontSize: '10px', display: 'block', marginBottom: '5px' }}>Daily Price ({getSymbol()})</label>
-                    <input type="number" className="form-control" value={paperRate} onChange={(e) => setPaperRate(Number(e.target.value))} />
+                    <input type="number" className="form-control" value={paperRate} onChange={(e) => setPaperRate(Number(e.target.value))} onWheel={(e) => e.target.blur()} />
                 </div>
             )}
 

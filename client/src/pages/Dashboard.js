@@ -595,6 +595,7 @@ const Dashboard = () => {
                                                                 placeholder="Limit"
                                                                 value={budget || ''}
                                                                 onChange={(e) => handleUpdateCategoryBudget(cat, e.target.value)}
+                                                                onWheel={(e) => e.target.blur()}
                                                                 style={{
                                                                     width: '75px',
                                                                     fontSize: '11px',
