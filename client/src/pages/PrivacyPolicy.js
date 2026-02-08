@@ -84,7 +84,7 @@ const PrivacyPolicy = () => {
                     <div className="fade-in" style={{ textAlign: 'center', marginBottom: '80px' }}>
                         <span className="step-badge">TRUST & SECURITY</span>
                         <h1 style={{ fontSize: 'clamp(32px, 5vw, 48px)', fontWeight: '900', color: 'white', letterSpacing: '-2px', marginBottom: '20px' }}>
-                            Privacy <span className="text-gradient">Policy</span>
+                            Privacy <span style={{ color: 'var(--primary)', display: 'inline-block' }}>Policy</span>
                         </h1>
                         <p style={{ color: 'var(--text-muted)', fontSize: '18px', maxWidth: '700px', margin: '0 auto', lineHeight: '1.6' }}>
                             At MySpendCraft, we believe financial privacy is a fundamental human right.
@@ -118,14 +118,6 @@ const PrivacyPolicy = () => {
                                 </p>
                             </div>
                         ))}
-                    </div>
-
-                    <div className="card glass-effect slide-up" style={{ marginTop: '80px', padding: '40px', textAlign: 'center', border: '1px solid var(--primary)' }}>
-                        <h2 style={{ color: 'white', fontWeight: '800', marginBottom: '15px' }}>Still have questions?</h2>
-                        <p style={{ color: 'var(--text-muted)', marginBottom: '30px' }}>Our security team is ready to answer any technical queries regarding your data.</p>
-                        <a href="mailto:security@myspendcraft.com" className="btn btn-primary" style={{ padding: '15px 40px' }}>
-                            Contact Security Team
-                        </a>
                     </div>
                 </div>
             </section>
