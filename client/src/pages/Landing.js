@@ -397,7 +397,7 @@ const Landing = () => {
           <div className="footer-juspay-column">
             <h4>Legal</h4>
             <ul>
-              <li><button onClick={() => document.getElementById('faq').scrollIntoView({ behavior: 'smooth' })}>Privacy Policy</button></li>
+              <li><button onClick={() => navigate('/privacy-policy')}>Privacy Policy</button></li>
               <li><button onClick={() => document.getElementById('faq').scrollIntoView({ behavior: 'smooth' })}>Terms of Use</button></li>
               <li><button onClick={() => document.getElementById('faq').scrollIntoView({ behavior: 'smooth' })}>Security</button></li>
             </ul>
@@ -429,7 +429,7 @@ const Landing = () => {
 
           <div style={{ display: 'flex', gap: '40px', alignItems: 'center' }}>
             <div style={{ display: 'flex', gap: '20px', color: '#64748b', fontSize: '13px' }}>
-              <a href="#" style={{ color: 'inherit', textDecoration: 'none' }}>Privacy Policy</a>
+              <Link to="/privacy-policy" style={{ color: 'inherit', textDecoration: 'none' }}>Privacy Policy</Link>
               <a href="#" style={{ color: 'inherit', textDecoration: 'none' }}>Terms of Use</a>
             </div>
 

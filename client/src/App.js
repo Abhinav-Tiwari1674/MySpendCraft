@@ -13,6 +13,7 @@ import Landing from './pages/Landing';
 import Features from './pages/Features';
 import Profile from './pages/Profile';
 import AdminDashboard from './pages/AdminDashboard';
+import PrivacyPolicy from './pages/PrivacyPolicy';
 
 import './index.css';
 
@@ -41,6 +42,7 @@ function App() {
             <Route path="/register" element={<Register />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password/:token" element={<ResetPassword />} />
+            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
 
             <Route
               path="/dashboard"
