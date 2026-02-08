@@ -23,7 +23,16 @@ app.use('/api/household', require('./routes/householdRoutes'));
 app.use('/api/contact', require('./routes/contactRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
 
+// Serving static files in production
+if (process.env.NODE_ENV === 'production') {
+    app.use(express.static(path.join(__dirname, '../client/build')));
 
+    app.get('*', (req, res) =>
+        res.sendFile(path.resolve(__dirname, '../', 'client', 'build', 'index.html'))
+    );
+} else {
+    app.get('/', (req, res) => res.send('Please set to production'));
+}
 
 app.use(errorHandler);
 
