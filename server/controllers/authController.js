@@ -183,6 +183,23 @@ const resetPasswordWithAnswer = asyncHandler(async (req, res) => {
     });
 });
 
+const dismissAnnouncement = asyncHandler(async (req, res) => {
+    const { announcementId } = req.body;
+
+    const user = await User.findById(req.user._id);
+
+    if (user) {
+        if (!user.dismissedAnnouncements.includes(announcementId)) {
+            user.dismissedAnnouncements.push(announcementId);
+            await user.save();
+        }
+        res.status(200).json({ message: 'Announcement dismissed' });
+    } else {
+        res.status(404);
+        throw new Error('User not found');
+    }
+});
+
 // Generate JWT
 const generateToken = (id) => {
     return jwt.sign({ id }, process.env.JWT_SECRET, {
@@ -198,4 +215,5 @@ module.exports = {
     updateProfile,
     forgotPasswordFetchQuestion,
     resetPasswordWithAnswer,
+    dismissAnnouncement,
 };

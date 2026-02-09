@@ -93,7 +93,15 @@ const sendBroadcast = asyncHandler(async (req, res) => {
 });
 
 const getLatestAnnouncement = asyncHandler(async (req, res) => {
-    const announcement = await Announcement.findOne({ isActive: true }).sort({ createdAt: -1 });
+    // Check if current user has dismissed any
+    const user = await User.findById(req.user._id);
+    const dismissedIds = user ? user.dismissedAnnouncements : [];
+
+    const announcement = await Announcement.findOne({
+        isActive: true,
+        _id: { $nin: dismissedIds }
+    }).sort({ createdAt: -1 });
+
     res.status(200).json(announcement);
 });
 

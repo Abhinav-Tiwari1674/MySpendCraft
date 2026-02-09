@@ -59,12 +59,9 @@ const Dashboard = () => {
     const fetchAnnouncement = async () => {
         try {
             const { data } = await api.get('/auth/announcement');
+            // Backend now handles filtering for dismissed announcements
             if (data && data.isActive) {
-                // Only show if it's a new announcement or user hasn't dismissed it
-                const dismissedId = localStorage.getItem('dismissed_announcement');
-                if (dismissedId !== data._id) {
-                    setAnnouncement(data);
-                }
+                setAnnouncement(data);
             } else {
                 setAnnouncement(null);
             }
@@ -73,10 +70,17 @@ const Dashboard = () => {
         }
     };
 
-    const handleDismissAnnouncement = () => {
+    const handleDismissAnnouncement = async () => {
         if (announcement) {
-            localStorage.setItem('dismissed_announcement', announcement._id);
-            setAnnouncement(null);
+            try {
+                // Permanently record dismissal on backend
+                await api.post('/auth/dismiss-announcement', { announcementId: announcement._id });
+                setAnnouncement(null);
+            } catch (err) {
+                console.error('Failed to dismiss announcement on backend', err);
+                // Fallback to just UI hide if API fails
+                setAnnouncement(null);
+            }
         }
     };
 
