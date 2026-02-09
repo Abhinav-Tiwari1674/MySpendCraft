@@ -6,33 +6,66 @@ const User = require('../models/User');
 // @route   POST /api/contact
 // @access  Public
 const createContact = asyncHandler(async (req, res) => {
-    const { name, email, message } = req.body;
+    const { message } = req.body;
 
-    if (!name || !email || !message) {
+    if (!message) {
         res.status(400);
-        throw new Error('Please fill all fields');
+        throw new Error('Please add a message');
     }
 
     const contact = await Contact.create({
-        name,
-        email,
+        name: req.user.name,
+        email: req.user.email,
+        userId: req.user._id,
         message
     });
 
     res.status(201).json(contact);
 });
 
-// @desc    Get all contact messages
+// @desc    Get all contact messages (Admin only)
 // @route   GET /api/contact
-// @access  Private
+// @access  Private/Admin
 const getContacts = asyncHandler(async (req, res) => {
     const contacts = await Contact.find().sort({ createdAt: -1 });
     res.status(200).json(contacts);
 });
 
+// @desc    Get my contact messages
+// @route   GET /api/contact/my
+// @access  Private
+const getMyMessages = asyncHandler(async (req, res) => {
+    const messages = await Contact.find({ userId: req.user._id }).sort({ createdAt: -1 });
+    res.status(200).json(messages);
+});
+
+// @desc    Reply to a contact message (Admin only)
+// @route   POST /api/contact/:id/reply
+// @access  Private/Admin
+const replyToContact = asyncHandler(async (req, res) => {
+    const contact = await Contact.findById(req.params.id);
+
+    if (!contact) {
+        res.status(404);
+        throw new Error('Message not found');
+    }
+
+    const { reply } = req.body;
+    if (!reply) {
+        res.status(400);
+        throw new Error('Please add a reply message');
+    }
+
+    contact.adminReply = reply;
+    contact.status = 'replied';
+
+    await contact.save();
+    res.status(200).json(contact);
+});
+
 // @desc    Update contact status
 // @route   PATCH /api/contact/:id
-// @access  Private
+// @access  Private/Admin
 const updateContactStatus = asyncHandler(async (req, res) => {
     const contact = await Contact.findById(req.params.id);
 
@@ -48,8 +81,35 @@ const updateContactStatus = asyncHandler(async (req, res) => {
     res.status(200).json(contact);
 });
 
+// @desc    Get unread admin replies count
+// @route   GET /api/contact/unread-count
+// @access  Private
+const getUnreadReplyCount = asyncHandler(async (req, res) => {
+    const count = await Contact.countDocuments({
+        userId: req.user._id,
+        status: 'replied',
+        userRead: false
+    });
+    res.status(200).json({ count });
+});
+
+// @desc    Mark all messages as read by user
+// @route   PUT /api/contact/mark-read
+// @access  Private
+const markMessagesAsRead = asyncHandler(async (req, res) => {
+    await Contact.updateMany(
+        { userId: req.user._id, status: 'replied' },
+        { userRead: true }
+    );
+    res.status(200).json({ message: 'Messages marked as read' });
+});
+
 module.exports = {
     createContact,
     getContacts,
-    updateContactStatus
+    getMyMessages,
+    replyToContact,
+    updateContactStatus,
+    getUnreadReplyCount,
+    markMessagesAsRead
 };

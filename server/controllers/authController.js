@@ -4,6 +4,18 @@ const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 const asyncHandler = require('express-async-handler');
 const User = require('../models/User');
+const dns = require('dns').promises;
+
+const validateEmailDomain = async (email) => {
+    try {
+        const domain = email.split('@')[1];
+        if (!domain) return false;
+        const mxRecords = await dns.resolveMx(domain);
+        return mxRecords && mxRecords.length > 0;
+    } catch (error) {
+        return false;
+    }
+};
 
 const registerUser = asyncHandler(async (req, res) => {
     const { name, email, password, securityQuestion, securityAnswer } = req.body;
@@ -13,6 +25,13 @@ const registerUser = asyncHandler(async (req, res) => {
         throw new Error('Please add all fields including security question and answer');
     }
 
+    // validate email domain existence
+    const isValidDomain = await validateEmailDomain(email);
+    if (!isValidDomain) {
+        res.status(400);
+        throw new Error('Email provider does not exist. Please use a valid email address from a registered provider.');
+    }
+
     const userExists = await User.findOne({ email });
 
     if (userExists) {
@@ -20,6 +39,11 @@ const registerUser = asyncHandler(async (req, res) => {
         throw new Error('User already exists');
     }
 
+    const emailRegex = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+    if (!emailRegex.test(email)) {
+        res.status(400);
+        throw new Error('Please provide a valid and authentic email address');
+    }
 
     const user = await User.create({
         name,

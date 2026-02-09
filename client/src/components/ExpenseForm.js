@@ -254,14 +254,26 @@ const ExpenseForm = ({ onAddExpense, expenseToEdit, onUpdateExpense, clearEdit, 
         return formData.type === 'expense' ? balance - amt : balance + amt;
     }, [balance, formData.amount, formData.type]);
 
-    const inputFocusStyle = (name) => ({
-        height: '48px',
-        background: 'var(--bg-body)',
-        fontSize: '14px',
-        border: isFocused === name ? '1px solid var(--primary)' : '1px solid var(--border)',
-        boxShadow: isFocused === name ? '0 0 15px rgba(249, 115, 22, 0.2)' : 'none',
-        transition: 'all 0.3s ease'
-    });
+    const inputFocusStyle = (name) => {
+        const isSelect = name === 'category' || name === 'type' || name === 'wallet';
+        return {
+            height: '48px',
+            background: 'var(--bg-body)',
+            fontSize: '14px',
+            border: isFocused === name ? '1px solid var(--primary)' : '1px solid var(--border)',
+            boxShadow: isFocused === name ? '0 0 15px rgba(249, 115, 22, 0.2)' : 'none',
+            transition: 'all 0.3s ease',
+            paddingLeft: '12px',
+            paddingRight: isSelect ? '40px' : '12px',
+            appearance: isSelect ? 'none' : 'auto',
+            backgroundImage: isSelect ? `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")` : 'none',
+            backgroundRepeat: 'no-repeat',
+            backgroundPosition: 'right 12px center',
+            backgroundSize: '16px',
+            color: 'white',
+            width: '100%'
+        };
+    };
 
     return (
         <div className="card glass-effect" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
@@ -370,8 +382,8 @@ const ExpenseForm = ({ onAddExpense, expenseToEdit, onUpdateExpense, clearEdit, 
             </div>
 
             <form onSubmit={handleSubmit}>
-                <div className="form-group">
-                    <label style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '1px', color: 'rgba(255,255,255,0.4)', marginBottom: '10px', display: 'block', fontWeight: '700' }}>Entry Title</label>
+                <div className="form-group" style={{ marginBottom: '15px' }}>
+                    <label style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', color: 'rgba(255,255,255,0.4)', marginBottom: '5px', display: 'block', fontWeight: '700' }}>Entry Title</label>
                     <input
                         type="text"
                         name="title"
@@ -382,11 +394,11 @@ const ExpenseForm = ({ onAddExpense, expenseToEdit, onUpdateExpense, clearEdit, 
                         onFocus={() => setIsFocused('title')}
                         onBlur={() => setIsFocused('')}
                         required
-                        style={{ ...inputFocusStyle('title'), height: '52px', fontSize: '14px' }}
+                        style={{ ...inputFocusStyle('title'), height: '44px', fontSize: '13px' }}
                     />
                 </div>
-                <div className="form-group">
-                    <label style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '1px', color: 'rgba(255,255,255,0.4)', marginBottom: '10px', display: 'block', fontWeight: '700' }}>Amount ({getSymbol()})</label>
+                <div className="form-group" style={{ marginBottom: '15px' }}>
+                    <label style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', color: 'rgba(255,255,255,0.4)', marginBottom: '5px', display: 'block', fontWeight: '700' }}>Amount ({getSymbol()})</label>
                     <input
                         type="number"
                         name="amount"
@@ -400,8 +412,8 @@ const ExpenseForm = ({ onAddExpense, expenseToEdit, onUpdateExpense, clearEdit, 
                         required
                         style={{
                             ...inputFocusStyle('amount'),
-                            height: '56px',
-                            fontSize: '22px',
+                            height: '48px',
+                            fontSize: '20px',
                             fontWeight: '900',
                             textAlign: 'center',
                             letterSpacing: '0.5px'
@@ -409,8 +421,8 @@ const ExpenseForm = ({ onAddExpense, expenseToEdit, onUpdateExpense, clearEdit, 
                     />
                 </div>
 
-                <div className="form-group">
-                    <label style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '1px', color: 'rgba(255,255,255,0.4)', marginBottom: '10px', display: 'block', fontWeight: '700' }}>Category</label>
+                <div className="form-group" style={{ marginBottom: '15px' }}>
+                    <label style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', color: 'rgba(255,255,255,0.4)', marginBottom: '5px', display: 'block', fontWeight: '700' }}>Category</label>
                     <select
                         name="category"
                         className="form-control"
@@ -418,7 +430,7 @@ const ExpenseForm = ({ onAddExpense, expenseToEdit, onUpdateExpense, clearEdit, 
                         onChange={handleChange}
                         onFocus={() => setIsFocused('category')}
                         onBlur={() => setIsFocused('')}
-                        style={{ ...inputFocusStyle('category'), height: '52px', fontSize: '14px' }}
+                        style={{ ...inputFocusStyle('category'), height: '44px', fontSize: '13px' }}
                     >
                         <option value="food">🍔 Food</option>
                         <option value="grocery">🛒 Grocery</option>
@@ -437,8 +449,8 @@ const ExpenseForm = ({ onAddExpense, expenseToEdit, onUpdateExpense, clearEdit, 
                     </select>
                 </div>
 
-                <div className="form-group">
-                    <label style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '1px', color: 'rgba(255,255,255,0.4)', marginBottom: '10px', display: 'block', fontWeight: '700' }}>Date</label>
+                <div className="form-group" style={{ marginBottom: '15px' }}>
+                    <label style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', color: 'rgba(255,255,255,0.4)', marginBottom: '5px', display: 'block', fontWeight: '700' }}>Date</label>
                     <input
                         type="date"
                         name="date"
@@ -448,12 +460,12 @@ const ExpenseForm = ({ onAddExpense, expenseToEdit, onUpdateExpense, clearEdit, 
                         onFocus={() => setIsFocused('date')}
                         onBlur={() => setIsFocused('')}
                         required
-                        style={{ ...inputFocusStyle('date'), height: '52px', fontSize: '14px' }}
+                        style={{ ...inputFocusStyle('date'), height: '44px', fontSize: '13px' }}
                     />
                 </div>
 
-                <div className="form-group">
-                    <label style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '1px', color: 'rgba(255,255,255,0.4)', marginBottom: '10px', display: 'block', fontWeight: '700' }}>Type</label>
+                <div className="form-group" style={{ marginBottom: '15px' }}>
+                    <label style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', color: 'rgba(255,255,255,0.4)', marginBottom: '5px', display: 'block', fontWeight: '700' }}>Type</label>
                     <select
                         name="type"
                         className="form-control"
@@ -461,7 +473,7 @@ const ExpenseForm = ({ onAddExpense, expenseToEdit, onUpdateExpense, clearEdit, 
                         onChange={handleChange}
                         onFocus={() => setIsFocused('type')}
                         onBlur={() => setIsFocused('')}
-                        style={{ ...inputFocusStyle('type'), height: '52px', fontSize: '14px' }}
+                        style={{ ...inputFocusStyle('type'), height: '44px', fontSize: '13px' }}
                     >
                         <option value="expense">📉 Expense</option>
                         <option value="income">📈 Income</option>

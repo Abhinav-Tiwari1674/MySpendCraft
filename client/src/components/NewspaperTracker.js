@@ -47,9 +47,9 @@ const NewspaperTracker = ({ allExpenses, onAddExpense, onDeleteExpense, selected
     return (
         <div className="card glass-effect" style={{ padding: '20px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <span style={{ fontSize: '24px' }}>📰</span>
-                    <h3 style={{ fontSize: '16px', margin: 0 }}>Newspaper Hub</h3>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '20px' }}>📰</span>
+                    <h3 style={{ fontSize: '14px', margin: 0, fontWeight: '800' }}>Newspaper Hub</h3>
                 </div>
                 <button onClick={() => setIsConfiguring(!isConfiguring)} className="btn-text">
                     {isConfiguring ? 'Done' : 'Rate ✎'}
@@ -63,14 +63,14 @@ const NewspaperTracker = ({ allExpenses, onAddExpense, onDeleteExpense, selected
                 </div>
             )}
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '20px' }}>
-                <div className="stat-card glass-effect" style={{ padding: '12px', textAlign: 'center' }}>
-                    <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>Days Logged</div>
-                    <div style={{ fontSize: '15px', fontWeight: '800' }}>{totalDays} Days</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '15px' }}>
+                <div className="stat-card glass-effect" style={{ padding: '8px 12px', textAlign: 'center', borderRadius: '10px' }}>
+                    <div style={{ fontSize: '9px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>Days Logged</div>
+                    <div style={{ fontSize: '14px', fontWeight: '800' }}>{totalDays} Days</div>
                 </div>
-                <div className="stat-card glass-effect" style={{ padding: '12px', textAlign: 'center', borderLeft: '4px solid #64748b' }}>
-                    <div style={{ fontSize: '10px', color: '#64748b' }}>Monthly Cost</div>
-                    <div style={{ fontSize: '15px', fontWeight: '800', color: 'var(--text-main)' }}>{formatCurrency(totalCost)}</div>
+                <div className="stat-card glass-effect" style={{ padding: '8px 12px', textAlign: 'center', borderLeft: '3px solid #64748b', borderRadius: '10px' }}>
+                    <div style={{ fontSize: '9px', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>Monthly Cost</div>
+                    <div style={{ fontSize: '14px', fontWeight: '800', color: 'var(--text-main)' }}>{formatCurrency(totalCost)}</div>
                 </div>
             </div>
 

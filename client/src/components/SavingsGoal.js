@@ -109,32 +109,50 @@ const SavingsGoal = ({ monthlySavings }) => {
 
                     <div style={{
                         width: '100%',
-                        height: '14px',
-                        background: 'rgba(255,255,255,0.03)',
+                        height: '16px',
+                        background: 'rgba(0,0,0,0.4)',
                         borderRadius: '20px',
                         overflow: 'hidden',
                         marginBottom: '15px',
-                        border: '1px solid rgba(255,255,255,0.05)',
-                        boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)'
+                        border: '1px solid rgba(255,255,255,0.08)',
+                        boxShadow: 'inset 0 2px 8px rgba(0,0,0,0.6)',
+                        position: 'relative'
                     }}>
                         <div
                             className="progress-active"
                             style={{
                                 width: `${progress}%`,
                                 height: '100%',
-                                background: 'var(--brand-gradient)',
+                                background: 'linear-gradient(90deg, #f97316 0%, #fb923c 50%, #f97316 100%)',
+                                backgroundSize: '200% 100%',
+                                animation: 'shimmer 3s ease-in-out infinite',
+                                borderRadius: '20px',
                                 transition: 'width 2s cubic-bezier(0.34, 1.56, 0.64, 1)',
-                                boxShadow: '0 0 20px rgba(249, 115, 22, 0.4)'
+                                boxShadow: '0 0 20px rgba(249, 115, 22, 0.6), inset 0 1px 0 rgba(255,255,255,0.3)'
                             }}
                         />
                     </div>
 
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
                         <div>
-                            <div style={{ fontSize: '32px', fontWeight: '900', color: 'white', letterSpacing: '-1px' }}>
-                                {progress}<span style={{ fontSize: '16px', color: 'var(--primary)', marginLeft: '2px' }}>%</span>
+                            <div style={{
+                                fontSize: '40px',
+                                fontWeight: '900',
+                                color: 'white',
+                                letterSpacing: '-2px',
+                                lineHeight: '1',
+                                textShadow: '0 2px 10px rgba(249, 115, 22, 0.3)'
+                            }}>
+                                {progress}<span style={{ fontSize: '20px', color: 'var(--primary)', marginLeft: '4px' }}>%</span>
                             </div>
-                            <div style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase', marginTop: '-5px' }}>Progress Complete</div>
+                            <div style={{
+                                fontSize: '11px',
+                                color: 'var(--text-muted)',
+                                textTransform: 'uppercase',
+                                marginTop: '4px',
+                                letterSpacing: '1px',
+                                fontWeight: '700'
+                            }}>Progress Complete</div>
                         </div>
 
                         {daysToTarget ? (

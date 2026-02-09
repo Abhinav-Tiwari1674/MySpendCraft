@@ -9,6 +9,7 @@ const Register = () => {
     const [password, setPassword] = useState('');
     const [securityQuestion, setSecurityQuestion] = useState('');
     const [securityAnswer, setSecurityAnswer] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const { register, user } = useContext(AuthContext);
     const navigate = useNavigate();
     const [error, setError] = useState('');
@@ -29,8 +30,28 @@ const Register = () => {
         }
     }, [user, navigate]);
 
+    const validateEmail = (email) => {
+        return String(email)
+            .toLowerCase()
+            .match(
+                /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
+            );
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setError('');
+
+        if (!validateEmail(email)) {
+            setError('Please enter a valid and authentic email address');
+            return;
+        }
+
+        if (password.length < 6) {
+            setError('Password must be at least 6 characters long');
+            return;
+        }
+
         try {
             await register(name, email, password, securityQuestion, securityAnswer);
         } catch (err) {
@@ -58,7 +79,7 @@ const Register = () => {
                     <div className="auth-segmented-item active">Sign Up</div>
                 </div>
 
-                {error && <div style={{ color: '#ef4444', marginBottom: '24px', textAlign: 'center', fontSize: '13px', background: 'rgba(239, 68, 68, 0.1)', padding: '12px', borderRadius: '12px' }}>{error}</div>}
+                {error && <div className="fade-in" style={{ color: '#ef4444', marginBottom: '24px', textAlign: 'center', fontSize: '13px', background: 'rgba(239, 68, 68, 0.1)', padding: '12px', borderRadius: '12px', border: '1px solid rgba(239, 68, 68, 0.2)' }}>{error}</div>}
 
                 <form onSubmit={handleSubmit}>
                     <div className="auth-input-group">
@@ -66,7 +87,7 @@ const Register = () => {
                         <input
                             type="text"
                             className="auth-input"
-                            placeholder="Name"
+                            placeholder="name"
                             value={name}
                             onChange={(e) => setName(e.target.value)}
                             required
@@ -77,16 +98,24 @@ const Register = () => {
                         <input
                             type="email"
                             className="auth-input"
-                            placeholder="name@company.com"
+                            placeholder="name@gmail.com"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             required
                         />
                     </div>
                     <div className="auth-input-group">
-                        <label>Password</label>
+                        <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            Password
+                            <span
+                                onClick={() => setShowPassword(!showPassword)}
+                                style={{ cursor: 'pointer', fontSize: '10px', color: 'var(--primary)', textTransform: 'none' }}
+                            >
+                                {showPassword ? 'Hide' : 'Show'}
+                            </span>
+                        </label>
                         <input
-                            type="password"
+                            type={showPassword ? "text" : "password"}
                             className="auth-input"
                             placeholder="••••••••"
                             value={password}

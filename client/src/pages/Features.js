@@ -272,7 +272,7 @@ const Features = () => {
                         <h4>Legal</h4>
                         <ul>
                             <li><Link to="/privacy-policy">Privacy Policy</Link></li>
-                            <li><Link to="/">Terms of Use</Link></li>
+                            <li><Link to="/terms-of-use">Terms of Use</Link></li>
                             <li><Link to="/">Security</Link></li>
                         </ul>
                     </div>
@@ -300,7 +300,7 @@ const Features = () => {
                     <div style={{ display: 'flex', gap: '40px', alignItems: 'center' }}>
                         <div style={{ display: 'flex', gap: '20px', color: '#64748b', fontSize: '13px' }}>
                             <Link to="/privacy-policy" style={{ color: 'inherit', textDecoration: 'none' }}>Privacy Policy</Link>
-                            <Link to="/" style={{ color: 'inherit', textDecoration: 'none' }}>Terms of Use</Link>
+                            <Link to="/terms-of-use" style={{ color: 'inherit', textDecoration: 'none' }}>Terms of Use</Link>
                         </div>
                         <div style={{ display: 'flex', gap: '15px' }}>
                             <div className="compliance-badge">ISO</div>

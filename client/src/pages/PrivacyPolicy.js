@@ -75,16 +75,16 @@ const PrivacyPolicy = () => {
         <div className="landing-page-container" style={{ minHeight: '100vh', paddingBottom: '100px' }}>
             <Navbar />
 
-            <section className="landing-section" style={{ paddingTop: '160px', paddingBottom: '60px' }}>
+            <section className="landing-section" style={{ paddingTop: '100px', paddingBottom: '60px' }}>
                 <div className="container" style={{ maxWidth: '1000px', margin: '0 auto' }}>
-                    <Link to="/" className="btn-text" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '32px', color: 'var(--primary)', textDecoration: 'none', fontWeight: '700' }}>
+                    <Link to="/" className="btn-text" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '24px', color: 'var(--primary)', textDecoration: 'none', fontWeight: '700' }}>
                         <FaArrowLeft size={12} /> Back to Home
                     </Link>
 
-                    <div className="fade-in" style={{ textAlign: 'center', marginBottom: '80px' }}>
+                    <div className="fade-in" style={{ textAlign: 'center', marginBottom: '60px' }}>
                         <span className="step-badge">TRUST & SECURITY</span>
-                        <h1 style={{ fontSize: 'clamp(32px, 5vw, 48px)', fontWeight: '900', color: 'white', letterSpacing: '-2px', marginBottom: '20px' }}>
-                            Privacy <span style={{ color: 'var(--primary)', display: 'inline-block' }}>Policy</span>
+                        <h1 style={{ fontSize: '36px', fontWeight: '800', color: 'white', letterSpacing: '-0.5px', marginBottom: '16px', marginTop: '16px' }}>
+                            Privacy <span style={{ color: 'var(--primary)' }}>Policy</span>
                         </h1>
                         <p style={{ color: 'var(--text-muted)', fontSize: '18px', maxWidth: '700px', margin: '0 auto', lineHeight: '1.6' }}>
                             At MySpendCraft, we believe financial privacy is a fundamental human right.

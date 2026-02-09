@@ -10,14 +10,14 @@ import ExpenseList from '../components/ExpenseList';
 import ExpenseChart from '../components/ExpenseChart';
 import ExpenseTrend from '../components/ExpenseTrend';
 import SavingsGoal from '../components/SavingsGoal';
-import MilkTracker from '../components/MilkTracker';
-import NewspaperTracker from '../components/NewspaperTracker';
 import CustomSelect from '../components/CustomSelect';
 import Sparkline from '../components/Sparkline';
 import LiquidBudget from '../components/LiquidBudget';
 import RecurringBills from '../components/RecurringBills';
 import HouseholdManager from '../components/HouseholdManager';
-import { FaArrowUp, FaArrowDown, FaWallet, FaUniversity, FaCreditCard, FaDownload, FaCalendarAlt, FaSyncAlt, FaPlus, FaExclamationTriangle, FaEdit, FaCheckCircle, FaUtensils, FaShoppingBag, FaPlane, FaFilm, FaFileInvoice, FaShoppingCart, FaTrash, FaRobot } from 'react-icons/fa';
+import HouseholdHub from '../components/HouseholdHub';
+import FeedbackSection from '../components/FeedbackSection';
+import { FaArrowUp, FaArrowDown, FaWallet, FaUniversity, FaCreditCard, FaMoneyBillWave, FaDownload, FaCalendarAlt, FaSyncAlt, FaPlus, FaExclamationTriangle, FaEdit, FaCheckCircle, FaUtensils, FaShoppingBag, FaPlane, FaFilm, FaFileInvoice, FaShoppingCart, FaTrash, FaRobot, FaInfoCircle, FaExclamationCircle, FaThLarge, FaList, FaChartPie, FaPercentage, FaFileInvoiceDollar, FaUsers, FaCommentDots, FaTimes } from 'react-icons/fa';
 
 const Dashboard = () => {
     const [expenses, setExpenses] = useState([]);
@@ -33,6 +33,8 @@ const Dashboard = () => {
     const [sortConfig, setSortConfig] = useState({ key: 'date', direction: 'desc' });
     const [currentTime, setCurrentTime] = useState(new Date());
     const [toast, setToast] = useState({ visible: false, message: '', type: 'success' });
+    const [announcement, setAnnouncement] = useState(null);
+    const [activeTab, setActiveTab] = useState('overview');
     const { loading, user } = useContext(AuthContext);
     const { formatCurrency, getSymbol } = useContext(CurrencyContext);
 
@@ -42,9 +44,47 @@ const Dashboard = () => {
     useEffect(() => {
         fetchExpenses();
         processRecurringBills();
+        fetchAnnouncement();
         const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-        return () => clearInterval(timer);
+
+        // Poll for announcements every 5 minutes
+        const announcementTimer = setInterval(fetchAnnouncement, 5 * 60 * 1000);
+
+        return () => {
+            clearInterval(timer);
+            clearInterval(announcementTimer);
+        };
     }, []);
+
+    const fetchAnnouncement = async () => {
+        try {
+            const { data } = await api.get('/auth/announcement');
+            if (data && data.isActive) {
+                // Only show if it's a new announcement or user hasn't dismissed it
+                const dismissedId = localStorage.getItem('dismissed_announcement');
+                if (dismissedId !== data._id) {
+                    setAnnouncement(data);
+                }
+            } else {
+                setAnnouncement(null);
+            }
+        } catch (error) {
+            console.error('Error fetching announcement', error);
+        }
+    };
+
+    const handleDismissAnnouncement = () => {
+        if (announcement) {
+            localStorage.setItem('dismissed_announcement', announcement._id);
+            setAnnouncement(null);
+        }
+    };
+
+    const handleVersionRefresh = () => {
+        handleDismissAnnouncement();
+        window.location.reload();
+    };
+
 
     const processRecurringBills = async () => {
         try {
@@ -335,164 +375,238 @@ const Dashboard = () => {
         return relevantExpenses.map(e => e.amount);
     };
 
+    const tabs = [
+        { id: 'overview', icon: <FaThLarge />, label: 'Overview' },
+        { id: 'expenses', icon: <FaList />, label: 'Expenses' },
+        { id: 'analytics', icon: <FaChartPie />, label: 'Analytics' },
+        { id: 'budget', icon: <FaPercentage />, label: 'Budget' },
+        { id: 'bills', icon: <FaFileInvoiceDollar />, label: 'Bills' },
+        { id: 'household', icon: <FaUsers />, label: 'Home Tracker' },
+        { id: 'feedback', icon: <FaCommentDots />, label: 'Feedback' },
+    ];
+
     if (loading) return (
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: 'var(--bg-body)' }}>
-            <div className="loader">Loading...</div>
+            <div className="loader">Loading MySpendCraft...</div>
         </div>
     );
 
     return (
-        <div style={{ background: 'var(--bg-body)', minHeight: '100vh', position: 'relative', overflow: 'hidden' }}>
-            <div className="landing-hero-glow" style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 0 }}></div>
-            <div style={{ position: 'relative', zIndex: 1 }}>
-                <Navbar />
-                <div className="container fade-in">
-                    {toast.visible && (
+        <div className="dash-container">
+            <Navbar />
+
+            <aside className="dash-sidebar">
+                <nav className="sidebar-nav">
+                    {tabs.map(tab => (
+                        <div
+                            key={tab.id}
+                            className={`sidebar-item ${activeTab === tab.id ? 'active' : ''}`}
+                            onClick={() => setActiveTab(tab.id)}
+                        >
+                            {tab.icon}
+                            <span className="sidebar-label">{tab.label}</span>
+                        </div>
+                    ))}
+                </nav>
+            </aside>
+
+            {/* Main Content Area */}
+            <main className="dash-main-content">
+                {/* Premium Toast Notification */}
+                {toast.visible && (
+                    <div className="toast-container">
                         <div className={`toast ${toast.type}`}>
-                            {toast.type === 'success' ? '✅' : '❌'} {toast.message}
-                        </div>
-                    )}
-
-
-                    <div className="dashboard-header-glass slide-down">
-                        <div className="header-left">
-                            <h1 className="greeting-text">
-                                Welcome back, {user?.name?.split(' ')[0] || 'User'}! <span style={{ fontSize: '20px' }}>✨</span>
-                            </h1>
-                            <div className="date-display">
-                                <FaCalendarAlt />
-                                {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-                                <span style={{ margin: '0 8px', opacity: 0.5 }}>|</span>
-                                <span style={{ fontFamily: 'monospace', fontWeight: '700', fontSize: '16px', color: 'var(--primary)' }}>
-                                    {currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-                                </span>
+                            <div className="toast-icon">
+                                {toast.type === 'success' && <FaCheckCircle />}
+                                {toast.type === 'error' && <FaExclamationCircle />}
+                                {toast.type === 'info' && <FaInfoCircle />}
+                            </div>
+                            <div className="toast-content">
+                                <div className="toast-message">{toast.message}</div>
                             </div>
                         </div>
+                    </div>
+                )}
 
-                        <div className="header-controls">
-                            <CustomSelect
-                                value={selectedMonth}
-                                options={months.map((m, i) => ({ value: i, label: m }))}
-                                onChange={(val) => setSelectedMonth(val)}
-                                width="160px"
-                            />
-
-                            <CustomSelect
-                                value={selectedYear}
-                                options={years.map(y => ({ value: y, label: y.toString() }))}
-                                onChange={(val) => setSelectedYear(val)}
-                                width="140px"
-                            />
-
-                            <button className="btn-glow-primary" onClick={exportToPDF} style={{ marginRight: '10px' }}>
-                                <FaDownload /> PDF Report
+                {announcement && (
+                    <div className="update-banner glass-effect slide-down" style={{
+                        marginBottom: '30px',
+                        padding: '15px 25px',
+                        background: announcement.type === 'warning' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(249, 115, 22, 0.1)',
+                        borderLeft: `4px solid ${announcement.type === 'warning' ? '#ef4444' : 'var(--primary)'}`,
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        borderRadius: '16px'
+                    }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                            <div style={{ color: announcement.type === 'warning' ? '#ef4444' : 'var(--primary)', fontSize: '24px' }}>
+                                {announcement.type === 'warning' ? <FaExclamationTriangle /> : <FaRobot />}
+                            </div>
+                            <div>
+                                <div style={{ fontWeight: '800', fontSize: '15px' }}>System Announcement</div>
+                                <div style={{ fontSize: '12px', opacity: 0.8 }}>{announcement.message}</div>
+                            </div>
+                        </div>
+                        <div style={{ display: 'flex', gap: '10px' }}>
+                            <button onClick={handleVersionRefresh} className="btn-glow-primary" style={{ padding: '10px 20px', fontSize: '13px' }}>
+                                <FaSyncAlt /> Refresh Now
                             </button>
-                            <button className="btn-glow-primary" onClick={exportToCSV} style={{ background: 'var(--success)', borderColor: 'var(--success)' }}>
-                                <FaDownload /> CSV Report
+                            <button onClick={handleDismissAnnouncement} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer' }}>
+                                <FaTimes size={14} />
                             </button>
                         </div>
                     </div>
+                )}
 
-                    <div className="stat-cards">
-                        <div className={`stat-card income slide-up glass-effect`} style={{ animationDelay: '0.1s' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <h3>Total Income</h3>
-                                <div style={{ padding: '8px', background: 'var(--success-bg)', borderRadius: '10px', color: 'var(--success)' }}>
-                                    <FaArrowUp size={16} />
+                <div className="fade-in">
+                    {activeTab === 'overview' && (
+                        <div className="tab-container">
+                            <div className="dashboard-header-glass slide-down">
+                                <div className="header-left">
+                                    <h1 className="greeting-text">
+                                        Welcome back, {user?.name?.split(' ')[0] || 'User'}! <span style={{ fontSize: '20px' }}>✨</span>
+                                    </h1>
+                                    <div className="date-display">
+                                        <FaCalendarAlt />
+                                        {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                                        <span style={{ margin: '0 8px', opacity: 0.5 }}>|</span>
+                                        <span style={{ fontFamily: 'monospace', fontWeight: '700', fontSize: '16px', color: 'var(--primary)' }}>
+                                            {currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                                        </span>
+                                    </div>
                                 </div>
-                            </div>
-                            <p className="income-text">{formatCurrency(totalIncome)}</p>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-                                <div className="insight-text">For {months[selectedMonth]} {selectedYear}</div>
-                                <Sparkline data={getSparklineData('income')} colorClass="income" />
-                            </div>
-                        </div>
 
-                        <div className={`stat-card expense slide-up glass-effect`} style={{ animationDelay: '0.2s' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <h3>Total Expense</h3>
-                                <div style={{ padding: '8px', background: 'var(--danger-bg)', borderRadius: '10px', color: 'var(--danger)' }}>
-                                    <FaArrowDown size={16} />
-                                </div>
-                            </div>
-                            <p className="expense-text">{formatCurrency(totalExpense)}</p>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-                                <div className="insight-text">
-                                    <span className={`percent-badge ${expenseChange > 0 ? 'down' : 'up'}`}>
-                                        {expenseChange > 0 ? '+' : ''}{expenseChange}%
-                                    </span> vs last month
-                                </div>
-                                <Sparkline data={getSparklineData('expense')} colorClass="expense" />
-                            </div>
-                        </div>
-
-                        <div className="premium-balance-card slide-up" style={{ animationDelay: '0.3s' }}>
-                            <div className="balance-header">
-                                <div>
-                                    <span className="balance-label">Total Balance</span>
-                                    <h2 className="balance-amount">{formatCurrency(balance)}</h2>
-                                </div>
-                                <div className="balance-icon-badge">
-                                    <FaWallet size={20} />
-                                </div>
-                            </div>
-
-                            <div className="balance-chart">
-                                {[45, 65, 50, 80, 60, 90, 75, 85, 60, 95, 70, 80].map((h, i) => (
-                                    <div
-                                        key={i}
-                                        className="chart-bar"
-                                        style={{
-                                            height: `${h}%`,
-                                            animationDelay: `${0.4 + (i * 0.05)}s`
-                                        }}
+                                <div className="header-controls">
+                                    <CustomSelect
+                                        value={selectedMonth}
+                                        options={months.map((m, i) => ({ value: i, label: m }))}
+                                        onChange={(val) => setSelectedMonth(val)}
+                                        width="160px"
                                     />
-                                ))}
+                                    <CustomSelect
+                                        value={selectedYear}
+                                        options={years.map(y => ({ value: y, label: y.toString() }))}
+                                        onChange={(val) => setSelectedYear(val)}
+                                        width="140px"
+                                    />
+                                    <button className="btn-glow-primary" onClick={exportToPDF} style={{ marginRight: '10px' }}>
+                                        <FaDownload /> PDF Report
+                                    </button>
+                                    <button className="btn-glow-primary" onClick={exportToCSV} style={{ background: 'var(--success)', borderColor: 'var(--success)' }}>
+                                        <FaDownload /> CSV Report
+                                    </button>
+                                </div>
                             </div>
-                        </div>
-                    </div>
 
-
-                    <div className="card glass-effect slide-up" style={{ animationDelay: '0.35s', marginBottom: '24px', padding: '16px 24px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '15px', overflowX: 'auto', paddingBottom: '5px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingRight: '20px', borderRight: '1px solid var(--border)', minWidth: '120px' }}>
-                                <FaWallet style={{ color: 'var(--primary)' }} />
-                                <span style={{ fontSize: '13px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '1px' }}>Wallets</span>
-                            </div>
-                            <div style={{ display: 'flex', gap: '30px', flex: 1 }}>
-                                {[
-                                    { id: 'Cash', icon: <FaWallet />, color: '#fbbf24' },
-                                    { id: 'Bank', icon: <FaUniversity />, color: '#60a5fa' },
-                                    { id: 'Credit Card', icon: <FaCreditCard />, color: '#f87171' }
-                                ].map(wallet => (
-                                    <div key={wallet.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: '160px' }}>
-                                        <div style={{
-                                            width: '40px',
-                                            height: '40px',
-                                            borderRadius: '10px',
-                                            background: `${wallet.color}15`,
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            color: wallet.color,
-                                            fontSize: '20px'
-                                        }}>
-                                            {wallet.icon}
+                            <div className="stat-cards">
+                                <div className="stat-card income slide-up glass-effect">
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <h3>Total Income</h3>
+                                        <div style={{ padding: '8px', background: 'var(--success-bg)', borderRadius: '10px', color: 'var(--success)' }}>
+                                            <FaArrowUp size={16} />
                                         </div>
+                                    </div>
+                                    <p className="income-text">{formatCurrency(totalIncome)}</p>
+                                    <Sparkline data={getSparklineData('income')} colorClass="income" />
+                                </div>
+
+                                <div className="stat-card expense slide-up glass-effect">
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <h3>Total Expense</h3>
+                                        <div style={{ padding: '8px', background: 'var(--danger-bg)', borderRadius: '10px', color: 'var(--danger)' }}>
+                                            <FaArrowDown size={16} />
+                                        </div>
+                                    </div>
+                                    <p className="expense-text">{formatCurrency(totalExpense)}</p>
+                                    <Sparkline data={getSparklineData('expense')} colorClass="expense" />
+                                </div>
+
+                                <div className="premium-balance-card slide-up">
+                                    <div className="balance-header">
                                         <div>
-                                            <div style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: '700' }}>{wallet.id}</div>
-                                            <div style={{ fontSize: '16px', fontWeight: '900', color: walletBalances[wallet.id] < 0 ? 'var(--danger)' : 'var(--text-main)' }}>
-                                                {formatCurrency(walletBalances[wallet.id])}
+                                            <span className="balance-label">Total Balance</span>
+                                            <h2 className="balance-amount">{formatCurrency(balance)}</h2>
+                                        </div>
+                                        <FaWallet size={20} />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '24px' }}>
+                                {[
+                                    { name: 'Cash', icon: <FaMoneyBillWave />, gradient: 'linear-gradient(135deg, #10b981 0%, #059669 100%)' },
+                                    { name: 'Bank', icon: <FaUniversity />, gradient: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)' },
+                                    { name: 'Credit Card', icon: <FaCreditCard />, gradient: 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)' }
+                                ].map(wallet => (
+                                    <div key={wallet.name} className="card glass-effect slide-up" style={{
+                                        padding: '20px',
+                                        position: 'relative',
+                                        overflow: 'hidden',
+                                        border: '1px solid rgba(255,255,255,0.08)',
+                                        transition: 'all 0.3s ease'
+                                    }}>
+                                        <div style={{
+                                            position: 'absolute',
+                                            top: '-10px',
+                                            right: '-10px',
+                                            width: '80px',
+                                            height: '80px',
+                                            background: wallet.gradient,
+                                            filter: 'blur(30px)',
+                                            opacity: 0.3,
+                                            borderRadius: '50%'
+                                        }} />
+                                        <div style={{ position: 'relative', zIndex: 1 }}>
+                                            <div style={{
+                                                display: 'inline-flex',
+                                                padding: '10px',
+                                                background: wallet.gradient,
+                                                borderRadius: '12px',
+                                                marginBottom: '12px',
+                                                boxShadow: '0 8px 16px rgba(0,0,0,0.3)'
+                                            }}>
+                                                <div style={{ color: 'white', fontSize: '20px' }}>{wallet.icon}</div>
+                                            </div>
+                                            <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>
+                                                {wallet.name}
+                                            </div>
+                                            <div style={{ fontSize: '20px', fontWeight: '800', color: 'white' }}>
+                                                {formatCurrency(walletBalances[wallet.name])}
                                             </div>
                                         </div>
                                     </div>
                                 ))}
                             </div>
-                        </div>
-                    </div>
 
-                    <div className="dashboard-grid">
-                        <div className="left-panel slide-up" style={{ animationDelay: '0.4s', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                            <div className="tab-content-grid" style={{ display: 'grid', gridTemplateColumns: '360px 1fr', gap: '24px', alignItems: 'start' }}>
+                                <ExpenseForm
+                                    onAddExpense={addExpense}
+                                    expenseToEdit={expenseToEdit}
+                                    onUpdateExpense={updateExpense}
+                                    clearEdit={() => setExpenseToEdit(null)}
+                                    balance={balance}
+                                />
+                                <ExpenseList
+                                    expenses={filteredExpenses}
+                                    onDelete={deleteExpense}
+                                    onEdit={(exp) => setExpenseToEdit(exp)}
+                                    searchTerm={searchTerm}
+                                    setSearchTerm={setSearchTerm}
+                                    filterCategory={filterCategory}
+                                    setFilterCategory={setFilterCategory}
+                                    filterType={filterType}
+                                    setFilterType={setFilterType}
+                                    clearFilter={() => { setFilterCategory(''); setFilterType('all'); }}
+                                    sortConfig={sortConfig}
+                                    setSortConfig={setSortConfig}
+                                />
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'expenses' && (
+                        <div className="tab-container" style={{ display: 'grid', gridTemplateColumns: '360px 1fr', gap: '24px', alignItems: 'start' }}>
                             <ExpenseForm
                                 onAddExpense={addExpense}
                                 expenseToEdit={expenseToEdit}
@@ -500,23 +614,6 @@ const Dashboard = () => {
                                 clearEdit={() => setExpenseToEdit(null)}
                                 balance={balance}
                             />
-                            <NewspaperTracker
-                                allExpenses={expenses}
-                                onAddExpense={addExpense}
-                                onDeleteExpense={deleteExpense}
-                                selectedMonth={selectedMonth}
-                                selectedYear={selectedYear}
-                            />
-                            <LiquidBudget
-                                totalExpense={totalExpense}
-                                monthlyBudget={monthlyBudget}
-                                onUpdateBudget={updateBudget}
-                            />
-                            <SavingsGoal monthlySavings={balance} />
-
-                        </div>
-
-                        <div className="center-panel slide-up" style={{ animationDelay: '0.5s', display: 'flex', flexDirection: 'column', gap: '24px' }}>
                             <ExpenseList
                                 expenses={filteredExpenses}
                                 onDelete={deleteExpense}
@@ -532,186 +629,202 @@ const Dashboard = () => {
                                 setSortConfig={setSortConfig}
                             />
                         </div>
+                    )}
 
-                        <div className="right-panel slide-up" style={{ animationDelay: '0.6s', display: 'flex', flexDirection: 'column', gap: '24px' }}>
-
-                            <div className="card glass-effect" style={{ padding: '20px' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
-                                    <div style={{ background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)', padding: '8px', borderRadius: '10px' }}>
-                                        <FaExclamationTriangle />
-                                    </div>
-                                    <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '800' }}>Budget Hub</h3>
-                                </div>
+                    {activeTab === 'analytics' && (
+                        <div className="tab-content-grid">
+                            <ExpenseChart expenses={partitionedExpenses} onSliceClick={(cat) => setFilterCategory(cat)} />
+                            <ExpenseTrend expenses={partitionedExpenses} />
+                            <div className="card glass-effect" style={{ padding: '24px' }}>
+                                <h3 style={{ marginBottom: '20px', fontSize: '18px', fontWeight: '800' }}>Category Breakdown</h3>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                                    {Object.entries(categorySpending).map(([cat, amount]) => (
+                                        <div key={cat} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <span style={{ textTransform: 'capitalize', color: 'var(--text-muted)' }}>{cat}</span>
+                                            <span style={{ fontWeight: '700' }}>{formatCurrency(amount)}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'budget' && (
+                        <div className="tab-content-grid">
+                            <LiquidBudget
+                                totalExpense={totalExpense}
+                                monthlyBudget={monthlyBudget}
+                                onUpdateBudget={updateBudget}
+                            />
+                            <SavingsGoal monthlySavings={balance} />
+                            <div className="card glass-effect" style={{ padding: '24px' }}>
+                                <h3 style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                    <FaPercentage style={{ color: 'var(--primary)' }} />
+                                    Budget Hub
+                                </h3>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                                     {['food', 'shopping', 'travel', 'entertainment', 'bills', 'grocery'].map(cat => {
                                         const spent = categorySpending[cat] || 0;
                                         const budget = categoryBudgets[cat] || 0;
-                                        const percent = budget > 0 ? Math.min((spent / budget) * 100, 100) : 0;
-                                        const isOver = budget > 0 && spent > budget;
+                                        const percentage = budget > 0 ? Math.min((spent / budget) * 100, 100) : 0;
+                                        const isOverBudget = spent > budget && budget > 0;
+                                        const isWarning = percentage > 80 && percentage <= 100;
+                                        const isGood = percentage <= 80;
 
-                                        const getCatIcon = (c) => {
-                                            switch (c) {
-                                                case 'food': return <FaUtensils />;
-                                                case 'shopping': return <FaShoppingBag />;
-                                                case 'travel': return <FaPlane />;
-                                                case 'entertainment': return <FaFilm />;
-                                                case 'bills': return <FaFileInvoice />;
-                                                case 'grocery': return <FaShoppingCart />;
-                                                default: return <FaWallet />;
-                                            }
-                                        };
+                                        let barColor = 'var(--success)';
+                                        if (isOverBudget) barColor = 'var(--danger)';
+                                        else if (isWarning) barColor = '#f59e0b';
 
                                         return (
                                             <div key={cat} style={{
-                                                display: 'flex',
-                                                flexDirection: 'column',
-                                                gap: '10px',
-                                                padding: '12px',
                                                 background: 'rgba(255,255,255,0.02)',
+                                                padding: '16px',
                                                 borderRadius: '12px',
                                                 border: '1px solid rgba(255,255,255,0.05)'
                                             }}>
-                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px' }}>
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0, flex: 1 }}>
-                                                        <div style={{ color: 'var(--primary)', fontSize: '14px', opacity: 0.8, flexShrink: 0 }}>
-                                                            {getCatIcon(cat)}
-                                                        </div>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                                                    <span style={{
+                                                        textTransform: 'capitalize',
+                                                        fontWeight: '700',
+                                                        fontSize: '14px'
+                                                    }}>{cat}</span>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                                         <span style={{
-                                                            fontSize: '13px',
-                                                            fontWeight: '700',
-                                                            textTransform: 'capitalize',
-                                                            whiteSpace: 'nowrap',
-                                                            overflow: 'hidden',
-                                                            textOverflow: 'ellipsis'
+                                                            fontSize: '12px',
+                                                            color: isOverBudget ? 'var(--danger)' : 'var(--text-muted)'
                                                         }}>
-                                                            {cat}
+                                                            {formatCurrency(spent)} / {formatCurrency(budget)}
                                                         </span>
-                                                    </div>
-
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
-                                                        <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                                                            <input
-                                                                type="number"
-                                                                placeholder="Limit"
-                                                                value={budget || ''}
-                                                                onChange={(e) => handleUpdateCategoryBudget(cat, e.target.value)}
-                                                                onWheel={(e) => e.target.blur()}
-                                                                style={{
-                                                                    width: '75px',
-                                                                    fontSize: '11px',
-                                                                    background: 'rgba(0,0,0,0.3)',
-                                                                    border: '1px solid var(--border)',
-                                                                    borderRadius: '6px',
-                                                                    color: 'white',
-                                                                    padding: '4px 6px 4px 16px',
-                                                                    textAlign: 'right',
-                                                                    fontWeight: '700',
-                                                                    outline: 'none',
-                                                                    transition: 'all 0.3s ease',
-                                                                    appearance: 'textfield',
-                                                                    WebkitAppearance: 'none',
-                                                                    margin: 0
-                                                                }}
-                                                            />
-                                                            <div style={{ position: 'absolute', left: '6px', pointerEvents: 'none', opacity: 0.4, fontSize: '9px' }}>
-                                                                {getSymbol()}
-                                                            </div>
-                                                        </div>
+                                                        <BudgetInput
+                                                            category={cat}
+                                                            initialValue={budget}
+                                                            onUpdate={handleUpdateCategoryBudget}
+                                                            getSymbol={getSymbol}
+                                                        />
                                                         <button
                                                             onClick={() => handleUpdateCategoryBudget(cat, 0)}
                                                             style={{
                                                                 background: 'rgba(239, 68, 68, 0.1)',
-                                                                border: 'none',
-                                                                borderRadius: '6px',
-                                                                color: 'var(--danger)',
-                                                                padding: '4px',
+                                                                border: '1px solid rgba(239, 68, 68, 0.2)',
+                                                                borderRadius: '8px',
+                                                                padding: '6px 8px',
                                                                 cursor: 'pointer',
+                                                                color: '#ef4444',
                                                                 display: 'flex',
                                                                 alignItems: 'center',
-                                                                justifyContent: 'center',
-                                                                transition: 'all 0.2s ease',
-                                                                opacity: budget > 0 ? 1 : 0.3
+                                                                transition: 'all 0.2s ease'
                                                             }}
-                                                            title="Clear Budget"
+                                                            title="Reset budget"
                                                         >
-                                                            <FaTrash size={10} />
+                                                            <FaTrash size={12} />
                                                         </button>
-                                                        <span style={{ fontSize: '10px', color: 'var(--text-muted)', margin: '0 2px' }}>/</span>
-                                                        <span style={{ fontSize: '12px', fontWeight: '800', color: isOver ? 'var(--danger)' : 'var(--text-main)' }}>
-                                                            {formatCurrency(spent)}
-                                                        </span>
                                                     </div>
                                                 </div>
-
-                                                <div style={{ height: '8px', background: 'rgba(255,255,255,0.05)', borderRadius: '10px', overflow: 'hidden', position: 'relative' }}>
+                                                <div style={{
+                                                    width: '100%',
+                                                    height: '8px',
+                                                    background: 'rgba(255,255,255,0.05)',
+                                                    borderRadius: '10px',
+                                                    overflow: 'hidden',
+                                                    position: 'relative'
+                                                }}>
                                                     <div style={{
-                                                        width: `${percent}%`,
+                                                        width: `${percentage}%`,
                                                         height: '100%',
-                                                        background: isOver ? 'var(--danger)' : 'linear-gradient(90deg, var(--primary), #fb923c)',
-                                                        boxShadow: isOver ? '0 0 10px rgba(239, 68, 68, 0.4)' : 'none',
-                                                        transition: 'width 0.8s cubic-bezier(0.4, 0, 0.2, 1)',
-                                                        borderRadius: '10px'
+                                                        background: barColor,
+                                                        borderRadius: '10px',
+                                                        transition: 'width 0.5s ease, background 0.3s ease',
+                                                        boxShadow: `0 0 10px ${barColor}`
                                                     }} />
                                                 </div>
-
-                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                    <div style={{ fontSize: '9px', fontWeight: '600', color: isOver ? 'var(--danger)' : 'var(--text-muted)' }}>
-                                                        {isOver ? (
-                                                            <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                                <FaExclamationTriangle size={8} /> Limit Exceeded!
-                                                            </span>
-                                                        ) : (
-                                                            `${Math.round(percent)}% used`
-                                                        )}
-                                                    </div>
-                                                    {budget > 0 && !isOver && (
-                                                        <div style={{ fontSize: '9px', color: 'var(--success)', fontWeight: '600' }}>
-                                                            {formatCurrency(budget - spent)} left
-                                                        </div>
-                                                    )}
+                                                <div style={{
+                                                    fontSize: '11px',
+                                                    color: barColor,
+                                                    marginTop: '6px',
+                                                    fontWeight: '700'
+                                                }}>
+                                                    {percentage.toFixed(0)}% {isOverBudget ? 'Over Budget!' : 'Used'}
                                                 </div>
                                             </div>
                                         );
                                     })}
                                 </div>
                             </div>
+                        </div>
+                    )}
 
+                    {activeTab === 'bills' && (
+                        <div style={{ maxWidth: '800px', margin: '0 auto' }}>
                             <RecurringBills />
+                        </div>
+                    )}
 
-                            <MilkTracker
+                    {activeTab === 'household' && (
+                        <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+                            <HouseholdHub
                                 allExpenses={expenses}
                                 onAddExpense={addExpense}
                                 onDeleteExpense={deleteExpense}
                                 selectedMonth={selectedMonth}
                                 selectedYear={selectedYear}
                             />
-
-
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', marginTop: '10px' }}>
-                                <ExpenseChart
-                                    expenses={partitionedExpenses}
-                                    onSliceClick={(cat) => setFilterCategory(cat)}
-                                />
-                                <ExpenseTrend expenses={partitionedExpenses} />
-                            </div>
                         </div>
-                    </div>
-                </div>
-            </div>
+                    )}
 
-            <div className="fab-container slide-up" style={{ animationDelay: '1s' }}>
-                <button
-                    className="fab-btn"
-                    onClick={() => {
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
-                        const titleInput = document.querySelector('input[name="title"]');
-                        if (titleInput) titleInput.focus();
-                    }}
-                    title="Add New Transaction"
-                >
-                    <FaPlus />
-                </button>
-            </div>
+                    {activeTab === 'feedback' && (
+                        <div style={{ maxWidth: '600px', margin: '0 auto' }}>
+                            <FeedbackSection />
+                        </div>
+                    )}
+                </div>
+
+                <div className="fab-container slide-up" style={{ animationDelay: '1s' }}>
+                    <button
+                        className="fab-btn"
+                        onClick={() => {
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                            const titleInput = document.querySelector('input[name="title"]');
+                            if (titleInput) titleInput.focus();
+                        }}
+                        title="Add New Transaction"
+                    >
+                        <FaPlus />
+                    </button>
+                </div>
+            </main>
+        </div>
+    );
+};
+
+const BudgetInput = ({ category, initialValue, onUpdate, getSymbol }) => {
+    const [localValue, setLocalValue] = useState(initialValue || '');
+    useEffect(() => { setLocalValue(initialValue || ''); }, [initialValue]);
+
+    const handleBlur = () => {
+        if (Number(localValue) !== Number(initialValue)) {
+            onUpdate(category, localValue);
+        }
+    };
+
+    return (
+        <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+            <span style={{ position: 'absolute', left: '8px', opacity: 0.5, fontSize: '11px' }}>{getSymbol()}</span>
+            <input
+                type="number"
+                value={localValue}
+                onChange={(e) => setLocalValue(e.target.value)}
+                onBlur={handleBlur}
+                style={{
+                    width: '80px',
+                    padding: '4px 6px 4px 18px',
+                    background: 'rgba(255,255,255,0.05)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    borderRadius: '6px',
+                    color: 'white',
+                    fontSize: '12px',
+                    textAlign: 'right'
+                }}
+            />
         </div>
     );
 };

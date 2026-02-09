@@ -2,6 +2,7 @@ const asyncHandler = require('express-async-handler');
 const User = require('../models/User');
 const Contact = require('../models/Contact');
 const Expense = require('../models/Expense');
+const Announcement = require('../models/Announcement');
 const mongoose = require('mongoose');
 
 const getAdminStats = asyncHandler(async (req, res) => {
@@ -54,8 +55,53 @@ const updateUserRole = asyncHandler(async (req, res) => {
     });
 });
 
+const deleteUser = asyncHandler(async (req, res) => {
+    const user = await User.findById(req.params.id);
+
+    if (!user) {
+        res.status(404);
+        throw new Error('User not found');
+    }
+
+    if (user.isAdmin) {
+        res.status(400);
+        throw new Error('Cannot delete admin user');
+    }
+
+    await User.deleteOne({ _id: req.params.id });
+    res.status(200).json({ message: 'User removed' });
+});
+
+const sendBroadcast = asyncHandler(async (req, res) => {
+    const { message, type } = req.body;
+
+    if (!message) {
+        res.status(400);
+        throw new Error('Message is required for broadcast');
+    }
+
+    // Deactivate previous announcements
+    await Announcement.updateMany({ isActive: true }, { isActive: false });
+
+    const announcement = await Announcement.create({
+        message,
+        type: type || 'info',
+        createdBy: req.user._id
+    });
+
+    res.status(201).json(announcement);
+});
+
+const getLatestAnnouncement = asyncHandler(async (req, res) => {
+    const announcement = await Announcement.findOne({ isActive: true }).sort({ createdAt: -1 });
+    res.status(200).json(announcement);
+});
+
 module.exports = {
     getAdminStats,
     getAllUsers,
-    updateUserRole
+    updateUserRole,
+    deleteUser,
+    sendBroadcast,
+    getLatestAnnouncement
 };

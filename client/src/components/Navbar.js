@@ -2,7 +2,8 @@ import { useContext, useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import AuthContext from '../context/AuthContext';
 import CurrencyContext from '../context/CurrencyContext';
-import { FaSignOutAlt, FaGem, FaBars, FaTimes, FaGlobeAmericas, FaUserCircle, FaChevronDown, FaEnvelope, FaChartLine } from 'react-icons/fa';
+import { FaSignOutAlt, FaGem, FaBars, FaTimes, FaGlobeAmericas, FaUserCircle, FaChevronDown, FaEnvelope, FaChartLine, FaCheckCircle, FaExclamationCircle, FaInfoCircle } from 'react-icons/fa';
+import api from '../utils/api';
 
 const Navbar = () => {
     const { user, logout } = useContext(AuthContext);
@@ -13,11 +14,18 @@ const Navbar = () => {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isCurrencyOpen, setIsCurrencyOpen] = useState(false);
     const [isProfileOpen, setIsProfileOpen] = useState(false);
-    const [toast, setToast] = useState({ visible: false, message: '' });
+    const [unreadCount, setUnreadCount] = useState(0);
+    const [toast, setToast] = useState({ visible: false, message: '', type: 'success' });
     const currencyRef = useRef(null);
     const profileRef = useRef(null);
 
     useEffect(() => {
+        let interval;
+        if (user) {
+            fetchUnreadCount();
+            interval = setInterval(fetchUnreadCount, 30000); // Check every 30s
+        }
+
         const handleScroll = () => {
             setScrolled(window.scrollY > 20);
         };
@@ -36,8 +44,18 @@ const Navbar = () => {
         return () => {
             window.removeEventListener('scroll', handleScroll);
             document.removeEventListener('mousedown', handleClickOutside);
+            if (interval) clearInterval(interval);
         };
-    }, []);
+    }, [user]);
+
+    const fetchUnreadCount = async () => {
+        try {
+            const { data } = await api.get('/contact/unread-count');
+            setUnreadCount(data.count);
+        } catch (err) {
+            console.error('Failed to fetch unread count', err);
+        }
+    };
 
     const onLogout = () => {
         setIsProfileOpen(false);
@@ -45,9 +63,9 @@ const Navbar = () => {
         logout();
     };
 
-    const showToast = (message) => {
-        setToast({ visible: true, message });
-        setTimeout(() => setToast({ visible: false, message: '' }), 3000);
+    const showToast = (message, type = 'success') => {
+        setToast({ visible: true, message, type });
+        setTimeout(() => setToast({ visible: false, message: '', type: 'success' }), 3000);
     };
 
     const handleNavigation = (sectionId) => {
@@ -157,12 +175,24 @@ const Navbar = () => {
                                     transition: 'all 0.3s ease'
                                 }}
                             >
-                                <div className="user-avatar" style={{ margin: 0, width: '32px', height: '32px', fontSize: '13px' }}>
-                                    {user.name.charAt(0).toUpperCase()}
+                                <div className="profile-btn-glow"></div>
+                                <div style={{ position: 'relative' }}>
+                                    <FaUserCircle size={20} color="var(--primary)" />
+                                    {unreadCount > 0 && (
+                                        <span style={{
+                                            position: 'absolute',
+                                            top: '-4px',
+                                            right: '-4px',
+                                            width: '10px',
+                                            height: '10px',
+                                            background: '#ef4444',
+                                            borderRadius: '50%',
+                                            border: '2px solid #0f172a',
+                                            boxShadow: '0 0 10px rgba(239, 68, 68, 0.5)'
+                                        }}></span>
+                                    )}
                                 </div>
-                                <span style={{ fontSize: '13px', fontWeight: '700', color: 'white' }}>
-                                    {user.name.split(' ')[0]}
-                                </span>
+                                <span style={{ fontSize: '14px', fontWeight: '700' }}>{user.name.split(' ')[0]}</span>
                                 <FaChevronDown size={10} style={{
                                     color: 'var(--text-muted)',
                                     transform: isProfileOpen ? 'rotate(180deg)' : 'rotate(0deg)',
@@ -201,6 +231,10 @@ const Navbar = () => {
                                         </button>
                                         <button className="dropdown-item" onClick={() => { navigate('/profile'); setIsProfileOpen(false); }}>
                                             <FaUserCircle size={14} /> Account Settings
+                                        </button>
+                                        <button className="dropdown-item" onClick={() => { navigate('/profile#support-history'); setIsProfileOpen(false); }}>
+                                            <FaEnvelope size={14} /> Support History
+                                            {unreadCount > 0 && <span style={{ marginLeft: 'auto', width: '8px', height: '8px', background: '#ef4444', borderRadius: '50%' }}></span>}
                                         </button>
                                         {user.isAdmin && (
                                             <button className="dropdown-item" onClick={() => { navigate('/admin/dashboard'); setIsProfileOpen(false); }}>
@@ -262,16 +296,19 @@ const Navbar = () => {
                 </div>
             )}
 
-            {/* Local Navbar Toast */}
+            {/* Premium Toast Notification */}
             {toast.visible && (
-                <div className="toast success" style={{
-                    position: 'fixed',
-                    top: '100px',
-                    right: '20px',
-                    zIndex: 2000,
-                    animation: 'auth-card-entrance 0.3s'
-                }}>
-                    {toast.message}
+                <div className="toast-container">
+                    <div className={`toast ${toast.type}`}>
+                        <div className="toast-icon">
+                            {toast.type === 'success' && <FaCheckCircle />}
+                            {toast.type === 'error' && <FaExclamationCircle />}
+                            {toast.type === 'info' && <FaInfoCircle />}
+                        </div>
+                        <div className="toast-content">
+                            <div className="toast-message">{toast.message}</div>
+                        </div>
+                    </div>
                 </div>
             )}
         </nav>

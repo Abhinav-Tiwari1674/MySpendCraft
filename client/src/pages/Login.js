@@ -1,11 +1,12 @@
 import { useState, useContext, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import AuthContext from '../context/AuthContext';
-import { FaGem } from 'react-icons/fa';
+import { FaGem, FaEye, FaEyeSlash } from 'react-icons/fa';
 
 const Login = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const { login, user, loading } = useContext(AuthContext);
     const navigate = useNavigate();
     const [error, setError] = useState('');
@@ -72,14 +73,36 @@ const Login = () => {
                                 Forgot?
                             </Link>
                         </div>
-                        <input
-                            type="password"
-                            className="auth-input"
-                            placeholder="••••••••"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            required
-                        />
+                        <div style={{ position: 'relative' }}>
+                            <input
+                                type={showPassword ? "text" : "password"}
+                                className="auth-input"
+                                placeholder="••••••••"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                required
+                                style={{ paddingRight: '45px' }}
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowPassword(!showPassword)}
+                                style={{
+                                    position: 'absolute',
+                                    right: '15px',
+                                    top: '50%',
+                                    transform: 'translateY(-50%)',
+                                    background: 'none',
+                                    border: 'none',
+                                    color: 'rgba(255, 255, 255, 0.4)',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    padding: '5px'
+                                }}
+                            >
+                                {showPassword ? <FaEyeSlash /> : <FaEye />}
+                            </button>
+                        </div>
                     </div>
 
                     <button type="submit" className="btn-auth">

@@ -1,6 +1,11 @@
 const mongoose = require('mongoose');
 
-const contactSchema = mongoose.Schema({
+const feedbackSchema = mongoose.Schema({
+    user: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true
+    },
     name: {
         type: String,
         required: [true, 'Please add a name']
@@ -9,29 +14,23 @@ const contactSchema = mongoose.Schema({
         type: String,
         required: [true, 'Please add an email']
     },
-    userId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: true
-    },
     message: {
         type: String,
         required: [true, 'Please add a message']
     },
-    adminReply: {
-        type: String
+    rating: {
+        type: Number,
+        required: [true, 'Please add a rating'],
+        min: 1,
+        max: 5
     },
     status: {
         type: String,
-        enum: ['new', 'read', 'replied'],
+        enum: ['new', 'read', 'addressed'],
         default: 'new'
-    },
-    userRead: {
-        type: Boolean,
-        default: false
     }
 }, {
     timestamps: true
 });
 
-module.exports = mongoose.model('Contact', contactSchema);
+module.exports = mongoose.model('Feedback', feedbackSchema);

@@ -175,8 +175,8 @@ const ExpenseList = ({
             <div style={{ padding: '24px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px', marginBottom: '24px' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '800' }}>Monthly Transactions</h3>
-                        <p style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                        <h3 style={{ margin: 0, fontSize: '22px', fontWeight: '800' }}>Monthly Transactions</h3>
+                        <p style={{ fontSize: '12px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px' }}>
                             {expenses.length} records found
                         </p>
                     </div>

@@ -19,7 +19,10 @@ import {
   FaEllipsisH,
   FaThLarge,
   FaTwitter,
-  FaArrowUp
+  FaArrowUp,
+  FaCheckCircle,
+  FaExclamationCircle,
+  FaInfoCircle
 } from 'react-icons/fa';
 import Navbar from '../components/Navbar';
 import FeaturesSection from '../components/FeaturesSection';
@@ -110,18 +113,22 @@ const Landing = () => {
   const handleContactSubmit = async (e) => {
     e.preventDefault();
 
+    const submissionData = {
+      name: user ? user.name : formData.name,
+      email: user ? user.email : formData.email,
+      message: formData.message
+    };
+
     // Validate required fields
-    if (!formData.name || !formData.email || !formData.message) {
+    if (!submissionData.name || !submissionData.email || !submissionData.message) {
       showToast('❌ Please fill all required fields.', 'error');
       return;
     }
 
-    // Verify imports at top of file include: import api from '../utils/api';
-
     setFormStatus({ loading: true, success: false, error: null });
 
     try {
-      await api.post('/contact', formData);
+      await api.post('/contact', submissionData);
       setFormStatus({ loading: false, success: true, error: null });
       setFormData({ name: '', email: '', message: '' });
       showToast('✅ Message sent successfully! We\'ll get back to you shortly.', 'success');
@@ -138,10 +145,19 @@ const Landing = () => {
 
   return (
     <div id="home" className="landing-page-container">
-      {/* Toast Notification */}
+      {/* Premium Toast Notification */}
       {toast.visible && (
-        <div className={`toast ${toast.type}`} style={{ position: 'fixed', top: '20px', right: '20px', zIndex: 9999 }}>
-          <span>{toast.message}</span>
+        <div className="toast-container">
+          <div className={`toast ${toast.type}`}>
+            <div className="toast-icon">
+              {toast.type === 'success' && <FaCheckCircle />}
+              {toast.type === 'error' && <FaExclamationCircle />}
+              {toast.type === 'info' && <FaInfoCircle />}
+            </div>
+            <div className="toast-content">
+              <div className="toast-message">{toast.message}</div>
+            </div>
+          </div>
         </div>
       )}
 
@@ -297,45 +313,79 @@ const Landing = () => {
             </div>
           </div>
 
-          <form className="contact-form" onSubmit={handleContactSubmit}>
-            <div className="form-row">
-              <div className="form-group">
-                <label>Name</label>
-                <input
-                  type="text"
-                  className="premium-input"
-                  placeholder="Your Name"
-                  required
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                />
+          {!user ? (
+            <div className="contact-login-prompt" style={{
+              background: 'rgba(255,255,255,0.02)',
+              border: '1px solid rgba(255,255,255,0.05)',
+              borderRadius: '24px',
+              padding: '40px',
+              textAlign: 'center',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '20px'
+            }}>
+              <div style={{
+                width: '60px',
+                height: '60px',
+                background: 'rgba(249, 115, 22, 0.1)',
+                borderRadius: '20px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'var(--brand-primary)',
+                fontSize: '24px'
+              }}>
+                <FaShieldAlt />
+              </div>
+              <h3 style={{ color: 'white', fontSize: '20px', fontWeight: '800' }}>Inquiry Restricted</h3>
+              <p style={{ color: 'var(--text-muted)', fontSize: '15px', lineHeight: '1.6', maxWidth: '300px' }}>
+                Please log in to your account to send us a message and track its status.
+              </p>
+              <Link to="/login" className="btn btn-primary" style={{ width: '100%', maxWidth: '200px' }}>
+                Log In Now
+              </Link>
+            </div>
+          ) : (
+            <form className="contact-form" onSubmit={handleContactSubmit}>
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Name</label>
+                  <input
+                    type="text"
+                    className="premium-input"
+                    placeholder="Your Name"
+                    disabled
+                    value={user.name}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Email</label>
+                  <input
+                    type="email"
+                    className="premium-input"
+                    placeholder="Your Email"
+                    disabled
+                    value={user.email}
+                  />
+                </div>
               </div>
               <div className="form-group">
-                <label>Email</label>
-                <input
-                  type="email"
-                  className="premium-input"
-                  placeholder="Your Email"
+                <label>Message</label>
+                <textarea
+                  className="premium-input premium-textarea"
+                  placeholder="How can we help?"
                   required
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                />
+                  value={formData.message}
+                  onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                ></textarea>
               </div>
-            </div>
-            <div className="form-group">
-              <label>Message</label>
-              <textarea
-                className="premium-input premium-textarea"
-                placeholder="How can we help?"
-                required
-                value={formData.message}
-                onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-              ></textarea>
-            </div>
-            <button type="submit" className="btn btn-primary" disabled={formStatus.loading} style={{ padding: '14px', fontSize: '15px', fontWeight: '700' }}>
-              {formStatus.loading ? 'Sending...' : 'Send Message'}
-            </button>
-          </form>
+              <button type="submit" className="btn btn-primary" disabled={formStatus.loading} style={{ padding: '14px', fontSize: '15px', fontWeight: '700' }}>
+                {formStatus.loading ? 'Sending...' : 'Send Message'}
+              </button>
+            </form>
+          )}
         </div>
       </section>
 
@@ -377,7 +427,6 @@ const Landing = () => {
             <h4>Platform</h4>
             <ul>
               <li><button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>Home</button></li>
-              <li><button onClick={() => navigate('/features')}>Features</button></li>
               <li><button onClick={() => navigate('/login')}>Dashboard</button></li>
               <li><button onClick={() => document.getElementById('faq').scrollIntoView({ behavior: 'smooth' })}>FAQ</button></li>
             </ul>
@@ -388,18 +437,6 @@ const Landing = () => {
             <h4>Support</h4>
             <ul>
               <li><button onClick={() => document.getElementById('contact').scrollIntoView({ behavior: 'smooth' })}>Contact Us</button></li>
-              <li><button onClick={() => window.location.href = 'mailto:support@myspendcraft.com'}>Help Center</button></li>
-              <li><button onClick={() => window.location.href = 'mailto:careers@myspendcraft.com'}>Careers</button></li>
-            </ul>
-          </div>
-
-          {/* Legal Column */}
-          <div className="footer-juspay-column">
-            <h4>Legal</h4>
-            <ul>
-              <li><button onClick={() => navigate('/privacy-policy')}>Privacy Policy</button></li>
-              <li><button onClick={() => document.getElementById('faq').scrollIntoView({ behavior: 'smooth' })}>Terms of Use</button></li>
-              <li><button onClick={() => document.getElementById('faq').scrollIntoView({ behavior: 'smooth' })}>Security</button></li>
             </ul>
           </div>
 
@@ -430,7 +467,7 @@ const Landing = () => {
           <div style={{ display: 'flex', gap: '40px', alignItems: 'center' }}>
             <div style={{ display: 'flex', gap: '20px', color: '#64748b', fontSize: '13px' }}>
               <Link to="/privacy-policy" style={{ color: 'inherit', textDecoration: 'none' }}>Privacy Policy</Link>
-              <a href="#" style={{ color: 'inherit', textDecoration: 'none' }}>Terms of Use</a>
+              <Link to="/terms-of-use" style={{ color: 'inherit', textDecoration: 'none' }}>Terms of Use</Link>
             </div>
 
 

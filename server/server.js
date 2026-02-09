@@ -21,6 +21,7 @@ app.use('/api/bills', require('./routes/billRoutes'));
 app.use('/api/recurring', require('./routes/recurringRoutes'));
 app.use('/api/household', require('./routes/householdRoutes'));
 app.use('/api/contact', require('./routes/contactRoutes'));
+app.use('/api/feedback', require('./routes/feedbackRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
 
 // Serving static files in production
