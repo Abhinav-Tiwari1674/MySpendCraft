@@ -166,9 +166,9 @@ const Navbar = () => {
                                 style={{
                                     display: 'flex',
                                     alignItems: 'center',
-                                    gap: '10px',
+                                    gap: '8px',
                                     cursor: 'pointer',
-                                    padding: '5px 12px',
+                                    padding: '5px 8px',
                                     background: 'rgba(255,255,255,0.05)',
                                     borderRadius: '100px',
                                     border: '1px solid rgba(255,255,255,0.1)',
@@ -176,45 +176,58 @@ const Navbar = () => {
                                 }}
                             >
                                 <div className="profile-btn-glow"></div>
-                                <div style={{ position: 'relative' }}>
-                                    <FaUserCircle size={20} color="var(--primary)" />
+                                <div style={{ position: 'relative', display: 'flex' }}>
+                                    <FaUserCircle size={22} color="var(--primary)" />
                                     {unreadCount > 0 && (
                                         <span style={{
                                             position: 'absolute',
-                                            top: '-4px',
-                                            right: '-4px',
-                                            width: '10px',
-                                            height: '10px',
+                                            top: '-2px',
+                                            right: '-2px',
+                                            width: '8px',
+                                            height: '8px',
                                             background: '#ef4444',
                                             borderRadius: '50%',
-                                            border: '2px solid #0f172a',
-                                            boxShadow: '0 0 10px rgba(239, 68, 68, 0.5)'
+                                            border: '1px solid #0f172a',
+                                            boxShadow: '0 0 8px rgba(239, 68, 68, 0.5)'
                                         }}></span>
                                     )}
                                 </div>
-                                <span style={{ fontSize: '14px', fontWeight: '700' }}>{user.name.split(' ')[0]}</span>
+                                <span className="desktop-only-text" style={{ fontSize: '14px', fontWeight: '700' }}>{user.name.split(' ')[0]}</span>
                                 <FaChevronDown size={10} style={{
                                     color: 'var(--text-muted)',
                                     transform: isProfileOpen ? 'rotate(180deg)' : 'rotate(0deg)',
                                     transition: 'transform 0.3s ease'
                                 }} />
+                                <style>{`
+                                    @media (max-width: 480px) {
+                                        .desktop-only-text {
+                                            display: none !important;
+                                        }
+                                        .user-profile-trigger {
+                                            padding: 4px !important;
+                                            border-radius: 50% !important;
+                                            width: 32px;
+                                            height: 32px;
+                                            justify-content: center;
+                                            border-color: transparent !important;
+                                            background: rgba(255,255,255,0.05) !important;
+                                            min-width: unset !important;
+                                        }
+                                        .user-profile-trigger svg {
+                                            margin: 0 !important;
+                                        }
+                                        .user-profile-trigger .fa-chevron-down {
+                                            display: none !important;
+                                        }
+                                        .user-profile-trigger span {
+                                            display: none !important;
+                                        }
+                                    }
+                                `}</style>
                             </div>
 
                             {isProfileOpen && (
-                                <div className="profile-dropdown" style={{
-                                    position: 'absolute',
-                                    top: 'calc(100% + 15px)',
-                                    right: 0,
-                                    width: '260px',
-                                    padding: '20px',
-                                    borderRadius: '24px',
-                                    zIndex: 2000,
-                                    background: 'rgba(8, 8, 8, 0.98)',
-                                    backdropFilter: 'blur(20px)',
-                                    border: '1px solid rgba(255, 255, 255, 0.1)',
-                                    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)',
-                                    animation: 'auth-card-entrance 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)'
-                                }}>
+                                <div className="profile-dropdown">
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', paddingBottom: '15px', borderBottom: '1px solid var(--border)', marginBottom: '15px' }}>
                                         <div className="user-avatar" style={{ width: '45px', height: '45px', fontSize: '18px' }}>
                                             {user.name.charAt(0).toUpperCase()}
@@ -253,7 +266,8 @@ const Navbar = () => {
                         <>
                             <Link to="/login" className="btn-login">Log In</Link>
                             <Link to="/register" className="btn-get-started">
-                                Get Started Free
+                                <span className="join-text-mobile">Join</span>
+                                <span className="full-text-desktop">Get Started Free</span>
                             </Link>
                         </>
                     )}

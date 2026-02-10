@@ -1,6 +1,7 @@
 import { useState, useEffect, useContext, useMemo, useRef } from 'react';
 import { FaCamera, FaImage, FaTimes, FaWallet, FaUniversity, FaCreditCard } from 'react-icons/fa';
 import CurrencyContext from '../context/CurrencyContext';
+import CustomSelect from './CustomSelect';
 
 const CATEGORY_KEYWORDS = {
     // ... existing keywords ...
@@ -268,10 +269,11 @@ const ExpenseForm = ({ onAddExpense, expenseToEdit, onUpdateExpense, clearEdit, 
             appearance: isSelect ? 'none' : 'auto',
             backgroundImage: isSelect ? `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")` : 'none',
             backgroundRepeat: 'no-repeat',
-            backgroundPosition: 'right 12px center',
+            backgroundPosition: 'calc(100% - 12px) center',
             backgroundSize: '16px',
             color: 'white',
-            width: '100%'
+            width: '100%',
+            cursor: 'pointer'
         };
     };
 
@@ -422,31 +424,28 @@ const ExpenseForm = ({ onAddExpense, expenseToEdit, onUpdateExpense, clearEdit, 
                 </div>
 
                 <div className="form-group" style={{ marginBottom: '15px' }}>
-                    <label style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', color: 'rgba(255,255,255,0.4)', marginBottom: '5px', display: 'block', fontWeight: '700' }}>Category</label>
-                    <select
-                        name="category"
-                        className="form-control"
+                    <CustomSelect
+                        label="Category"
                         value={formData.category}
-                        onChange={handleChange}
-                        onFocus={() => setIsFocused('category')}
-                        onBlur={() => setIsFocused('')}
-                        style={{ ...inputFocusStyle('category'), height: '44px', fontSize: '13px' }}
-                    >
-                        <option value="food">🍔 Food</option>
-                        <option value="grocery">🛒 Grocery</option>
-                        <option value="travel">🚗 Travel & Fuel</option>
-                        <option value="shopping">🛍️ Shopping</option>
-                        <option value="rent">🏠 Rent / EMI</option>
-                        <option value="bills">🧾 Bills & Utils</option>
-                        <option value="salary">💰 Salary / Income</option>
-                        <option value="entertainment">🎬 Entertainment</option>
-                        <option value="health">🏥 Health & Medical</option>
-                        <option value="education">📚 Education</option>
-                        <option value="investment">📈 Investment & SIP</option>
-                        <option value="tax">🏛️ Taxes</option>
-                        <option value="insurance">🛡️ Insurance</option>
-                        <option value="other">📦 Other</option>
-                    </select>
+                        options={[
+                            { value: 'food', label: '🍔 Food' },
+                            { value: 'grocery', label: '🛒 Grocery' },
+                            { value: 'travel', label: '🚗 Travel & Fuel' },
+                            { value: 'shopping', label: '🛍️ Shopping' },
+                            { value: 'rent', label: '🏠 Rent / EMI' },
+                            { value: 'bills', label: '🧾 Bills & Utils' },
+                            { value: 'salary', label: '💰 Salary / Income' },
+                            { value: 'entertainment', label: '🎬 Entertainment' },
+                            { value: 'health', label: '🏥 Health & Medical' },
+                            { value: 'education', label: '📚 Education' },
+                            { value: 'investment', label: '📈 Investment & SIP' },
+                            { value: 'tax', label: '🏛️ Taxes' },
+                            { value: 'insurance', label: '🛡️ Insurance' },
+                            { value: 'other', label: '📦 Other' }
+                        ]}
+                        onChange={(val) => setFormData({ ...formData, category: val })}
+                        width="100%"
+                    />
                 </div>
 
                 <div className="form-group" style={{ marginBottom: '15px' }}>
@@ -465,19 +464,16 @@ const ExpenseForm = ({ onAddExpense, expenseToEdit, onUpdateExpense, clearEdit, 
                 </div>
 
                 <div className="form-group" style={{ marginBottom: '15px' }}>
-                    <label style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', color: 'rgba(255,255,255,0.4)', marginBottom: '5px', display: 'block', fontWeight: '700' }}>Type</label>
-                    <select
-                        name="type"
-                        className="form-control"
+                    <CustomSelect
+                        label="Type"
                         value={formData.type}
-                        onChange={handleChange}
-                        onFocus={() => setIsFocused('type')}
-                        onBlur={() => setIsFocused('')}
-                        style={{ ...inputFocusStyle('type'), height: '44px', fontSize: '13px' }}
-                    >
-                        <option value="expense">📉 Expense</option>
-                        <option value="income">📈 Income</option>
-                    </select>
+                        options={[
+                            { value: 'expense', label: '📉 Expense' },
+                            { value: 'income', label: '📈 Income' }
+                        ]}
+                        onChange={(val) => setFormData({ ...formData, type: val })}
+                        width="100%"
+                    />
                 </div>
 
                 <div className="form-group">

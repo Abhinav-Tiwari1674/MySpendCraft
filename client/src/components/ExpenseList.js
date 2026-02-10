@@ -172,8 +172,62 @@ const ExpenseList = ({
     return (
         <div className="card glass-table-container" style={{ padding: 0, border: 'none', position: 'relative' }}>
             {renderPreviewModal()}
-            <div style={{ padding: '24px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px', marginBottom: '24px' }}>
+            <div style={{ padding: '24px' }} className="expense-list-header">
+                <style>{`
+                    @media (max-width: 768px) {
+                        .expense-list-header {
+                            padding: 16px !important;
+                        }
+                        .header-row {
+                            flex-direction: column;
+                            align-items: stretch !important;
+                            gap: 16px !important;
+                        }
+                        .filter-controls {
+                            width: 100%;
+                            flex-direction: column;
+                            gap: 12px !important;
+                        }
+                        .search-box-container {
+                            width: 100%;
+                        }
+                        .search-box-container input {
+                            width: 100% !important;
+                        }
+                        .filters-btn {
+                            width: 100%;
+                            justify-content: center;
+                        }
+                        .filter-dropdown {
+                            width: 100% !important;
+                            left: 0 !important;
+                            right: 0 !important;
+                            top: calc(100% + 12px) !important;
+                            position: absolute !important; 
+                            background: rgba(15, 23, 42, 0.98) !important;
+                            backdrop-filter: blur(20px) !important;
+                            z-index: 1000 !important;
+                            box-shadow: 0 20px 50px rgba(0,0,0,0.8) !important;
+                            border: 1px solid rgba(255,255,255,0.1) !important;
+                        }
+                        .desktop-table {
+                            display: none;
+                        }
+                        .mobile-list {
+                            display: flex;
+                            flex-direction: column;
+                            gap: 12px;
+                            padding: 0 16px 16px 16px;
+                        }
+                    }
+                    @media (min-width: 769px) {
+                        .mobile-list {
+                            display: none;
+                        }
+                    }
+                `}</style>
+
+                <div className="header-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px', marginBottom: '24px' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                         <h3 style={{ margin: 0, fontSize: '22px', fontWeight: '800' }}>Monthly Transactions</h3>
                         <p style={{ fontSize: '12px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px' }}>
@@ -181,11 +235,11 @@ const ExpenseList = ({
                         </p>
                     </div>
 
-                    <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                        <div style={{ position: 'relative' }}>
+                    <div className="filter-controls" style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                        <div style={{ position: 'relative', width: showFilters ? '100%' : 'auto' }}>
                             <button
                                 onClick={() => setShowFilters(!showFilters)}
-                                className={`btn-glow-primary ${showFilters ? 'active' : ''}`}
+                                className={`btn-glow-primary filters-btn ${showFilters ? 'active' : ''}`}
                                 style={{
                                     padding: '10px 18px',
                                     fontSize: '13px',
@@ -295,7 +349,7 @@ const ExpenseList = ({
                             )}
                         </div>
 
-                        <div style={{ position: 'relative' }}>
+                        <div className="search-box-container" style={{ position: 'relative' }}>
                             <span style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', opacity: 0.4 }}>🔍</span>
                             <input
                                 type="text"
@@ -325,7 +379,8 @@ const ExpenseList = ({
                 )}
             </div>
 
-            <div style={{ overflowX: 'auto', maxWidth: '100%', WebkitOverflowScrolling: 'touch' }}>
+            {/* Desktop Table View */}
+            <div className="desktop-table" style={{ overflowX: 'auto', maxWidth: '100%', WebkitOverflowScrolling: 'touch' }}>
                 <table className="glass-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
                     <thead>
                         <tr>
@@ -450,6 +505,114 @@ const ExpenseList = ({
                         )}
                     </tbody>
                 </table>
+            </div>
+
+            {/* Mobile Card List View */}
+            <div className="mobile-list">
+                {expenses.length > 0 ? (
+                    expenses.map((expense) => (
+                        <div key={expense._id} className="glass-effect" style={{ padding: '16px', borderRadius: '16px', border: '1px solid var(--border)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+                                <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                                    <div style={{
+                                        width: '40px', height: '40px',
+                                        background: expense.type === 'income' ? 'var(--success-bg)' : 'var(--danger-bg)',
+                                        borderRadius: '12px',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        fontSize: '20px'
+                                    }}>
+                                        {getIcon(expense.category)}
+                                    </div>
+                                    <div>
+                                        <h4 style={{ margin: 0, fontSize: '15px', fontWeight: '700', color: 'white' }}>{expense.title}</h4>
+                                        <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                                            {new Date(expense.date).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })} •
+                                            <span style={{ textTransform: 'capitalize' }}> {expense.category}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div style={{ textAlign: 'right' }}>
+                                    <div style={{
+                                        fontSize: '16px', fontWeight: '800',
+                                        color: expense.type === 'income' ? 'var(--success)' : 'white'
+                                    }}>
+                                        {expense.type === 'expense' ? '- ' : '+ '}
+                                        {formatCurrency(expense.amount)}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {expense.note && (
+                                <div style={{
+                                    background: 'rgba(255,255,255,0.03)',
+                                    padding: '8px 12px',
+                                    borderRadius: '8px',
+                                    fontSize: '11px',
+                                    color: 'var(--text-muted)',
+                                    marginBottom: '12px',
+                                    fontStyle: 'italic'
+                                }}>
+                                    "{expense.note}"
+                                </div>
+                            )}
+
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '12px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                                <div style={{ display: 'flex', gap: '8px' }}>
+                                    {expense.billUrl && (
+                                        <button
+                                            onClick={() => setPreviewUrl(expense.billUrl)}
+                                            style={{ background: 'none', border: 'none', padding: 0, fontSize: '18px' }}
+                                        >
+                                            📎
+                                        </button>
+                                    )}
+                                </div>
+                                <div style={{ display: 'flex', gap: '12px' }}>
+                                    <button
+                                        onClick={() => onEdit(expense)}
+                                        style={{
+                                            background: 'rgba(249, 115, 22, 0.1)',
+                                            color: 'var(--primary)',
+                                            border: 'none',
+                                            padding: '6px 12px',
+                                            borderRadius: '8px',
+                                            fontSize: '12px',
+                                            fontWeight: '600',
+                                            display: 'flex', alignItems: 'center', gap: '6px'
+                                        }}
+                                    >
+                                        <FaEdit /> Edit
+                                    </button>
+                                    <button
+                                        onClick={() => onDelete(expense._id)}
+                                        style={{
+                                            background: 'rgba(239, 68, 68, 0.1)',
+                                            color: 'var(--danger)',
+                                            border: 'none',
+                                            padding: '6px 12px',
+                                            borderRadius: '8px',
+                                            fontSize: '12px',
+                                            fontWeight: '600',
+                                            display: 'flex', alignItems: 'center', gap: '6px'
+                                        }}
+                                    >
+                                        <FaTrash />
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    ))
+                ) : (
+                    <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-muted)' }}>
+                        <div style={{ fontSize: '40px', marginBottom: '16px' }}>📉</div>
+                        <p>No records found.</p>
+                        {(searchTerm || filterCategory) && (
+                            <button className="btn btn-primary" onClick={() => { setSearchTerm(''); clearFilter(); }} style={{ marginTop: '10px', padding: '8px 20px', fontSize: '12px' }}>
+                                Reset Filters
+                            </button>
+                        )}
+                    </div>
+                )}
             </div>
         </div>
     );

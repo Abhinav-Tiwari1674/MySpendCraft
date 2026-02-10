@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { FaChevronDown } from 'react-icons/fa';
 
-const CustomSelect = ({ value, options, onChange, label, width = '140px' }) => {
+const CustomSelect = ({ value, options, onChange, label, placeholder = 'Select an option...', width = '140px' }) => {
     const [isOpen, setIsOpen] = useState(false);
     const ref = useRef(null);
 
@@ -18,17 +18,20 @@ const CustomSelect = ({ value, options, onChange, label, width = '140px' }) => {
         };
     }, []);
 
-    const selectedOption = options.find(opt => opt.value === value) || options[0];
+    const selectedOption = options.find(opt => opt.value === value);
 
     return (
-        <div className="custom-select-wrapper" ref={ref} style={{ width }}>
-            {label && <label style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px', fontWeight: '700', textTransform: 'uppercase' }}>{label}</label>}
+        <div className="custom-select-container" ref={ref} style={{ width, position: 'relative', zIndex: isOpen ? 10000 : 1 }}>
+            {label && <label style={{ display: 'block', fontSize: '11px', color: 'rgba(255,255,255,0.4)', marginBottom: '8px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '1px' }}>{label}</label>}
             <div
                 className={`custom-select ${isOpen ? 'open' : ''}`}
                 onClick={() => setIsOpen(!isOpen)}
+                style={{ height: '44px', background: 'var(--bg-body)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
             >
-                <span>{selectedOption.label}</span>
-                <FaChevronDown className="arrow" />
+                <span style={{ fontSize: '13px', color: value ? 'white' : 'rgba(255,255,255,0.3)' }}>
+                    {selectedOption ? selectedOption.label : placeholder}
+                </span>
+                <FaChevronDown className="arrow" style={{ fontSize: '12px', opacity: 0.6 }} />
             </div>
             <div className={`custom-options ${isOpen ? 'open' : ''}`}>
                 {options.map((option) => (

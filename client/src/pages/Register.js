@@ -2,6 +2,7 @@ import { useState, useContext, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import AuthContext from '../context/AuthContext';
 import { FaGem } from 'react-icons/fa';
+import CustomSelect from '../components/CustomSelect';
 
 const Register = () => {
     const [name, setName] = useState('');
@@ -128,20 +129,15 @@ const Register = () => {
                         Security Recovery
                     </div>
 
-                    <div className="auth-input-group">
-                        <label>Security Question</label>
-                        <select
-                            className="auth-input"
-                            style={{ appearance: 'none', cursor: 'pointer', color: securityQuestion ? 'white' : 'rgba(255, 255, 255, 0.2)' }}
+                    <div className="auth-input-group" style={{ position: 'relative', zIndex: 100 }}>
+                        <CustomSelect
+                            label="Security Question"
+                            placeholder="Select a question..."
                             value={securityQuestion}
-                            onChange={(e) => setSecurityQuestion(e.target.value)}
-                            required
-                        >
-                            <option value="" disabled>Select a question...</option>
-                            {securityQuestions.map((q, i) => (
-                                <option key={i} value={q} style={{ background: '#0f172a', color: 'white' }}>{q}</option>
-                            ))}
-                        </select>
+                            options={securityQuestions.map(q => ({ value: q, label: q }))}
+                            onChange={(val) => setSecurityQuestion(val)}
+                            width="100%"
+                        />
                     </div>
 
                     <div className="auth-input-group">

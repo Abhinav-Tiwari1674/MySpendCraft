@@ -273,13 +273,18 @@ const Dashboard = () => {
     };
 
     const deleteExpense = async (id) => {
+        // Optimistic UI Update: Remove from list immediately
+        const previousExpenses = [...expenses];
+        setExpenses(expenses.filter(exp => exp._id !== id));
+
         try {
             await api.delete(`/expenses/${id}`);
-            setExpenses(expenses.filter(exp => exp._id !== id));
             showToast('Transaction deleted');
         } catch (error) {
+            // Rollback on failure
+            setExpenses(previousExpenses);
             console.error('Error deleting expense', error);
-            showToast('Deletion failed', 'error');
+            showToast('Deletion failed. Please try again.', 'error');
         }
     };
 
@@ -783,9 +788,24 @@ const Dashboard = () => {
                     <button
                         className="fab-btn"
                         onClick={() => {
-                            window.scrollTo({ top: 0, behavior: 'smooth' });
-                            const titleInput = document.querySelector('input[name="title"]');
-                            if (titleInput) titleInput.focus();
+                            if (activeTab !== 'overview') {
+                                setActiveTab('overview');
+                                setTimeout(() => {
+                                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                                    const titleInput = document.querySelector('input[name="title"]');
+                                    if (titleInput) {
+                                        titleInput.focus();
+                                        titleInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                    }
+                                }, 300);
+                            } else {
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                                const titleInput = document.querySelector('input[name="title"]');
+                                if (titleInput) {
+                                    titleInput.focus();
+                                    titleInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                }
+                            }
                         }}
                         title="Add New Transaction"
                     >
@@ -798,14 +818,194 @@ const Dashboard = () => {
                 .elite-broadcast-overlay {
                     position: fixed;
                     inset: 0;
-                    background: rgba(0,0,0,0.8);
-                    backdrop-filter: blur(10px);
-                    z-index: 20000;
+                    z-index: 10000;
+                    background: rgba(0, 0, 0, 0.7);
+                    backdrop-filter: blur(8px);
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    padding: 20px;
+                }
+                .broadcast-box {
+                    background: #0f172a;
+                    border: 1px solid rgba(255, 255, 255, 0.1);
+                    border-radius: 24px;
+                    width: 100%;
+                    max-width: 480px;
+                    overflow: hidden;
+                    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+                    position: relative;
+                }
+                .broadcast-accent {
+                    height: 4px;
+                    width: 100%;
+                }
+                .broadcast-header {
+                    padding: 24px 24px 0;
+                    display: flex;
+                    align-items: center;
+                    gap: 16px;
+                }
+                .broadcast-icon-box {
+                    width: 48px;
+                    height: 48px;
+                    border-radius: 12px;
                     display: flex;
                     align-items: center;
                     justify-content: center;
+                    font-size: 20px;
+                }
+                .broadcast-title h3 {
+                    margin: 0;
+                    font-size: 18px;
+                    font-weight: 700;
+                    color: white;
+                }
+                .broadcast-title span {
+                    font-size: 11px;
+                    color: var(--text-muted);
+                    font-family: monospace;
+                    letter-spacing: 1px;
+                }
+                .broadcast-body {
+                    padding: 16px 24px;
+                    color: var(--text-muted);
+                    font-size: 15px;
+                    line-height: 1.6;
+                }
+                .broadcast-footer {
+                    padding: 0 24px 24px;
+                    display: flex;
+                    gap: 12px;
+                }
+                .acknowledge-btn {
+                    flex: 1;
+                    padding: 12px;
+                    border-radius: 12px;
+                    border: none;
+                    background: white;
+                    color: black;
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: transform 0.2s;
+                }
+                .acknowledge-btn:active {
+                    transform: scale(0.98);
+                }
+                .refresh-bulletin-btn {
+                    padding: 12px 20px;
+                    border-radius: 12px;
+                    border: 1px solid rgba(255,255,255,0.1);
+                    background: transparent;
+                    color: white;
+                    font-weight: 600;
+                    cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                }
+
+                @media (max-width: 768px) {
+                    .dash-container {
+                        padding-bottom: 80px; /* Space for bottom nav */
+                    }
+                    .dash-sidebar {
+                        display: none; /* Hide sidebar on mobile */
+                    }
+                    .dash-main-content {
+                        margin-left: 0;
+                        padding: 16px;
+                        padding-top: 80px; /* Space for fixed navbar */
+                    }
+                    .dashboard-header-glass {
+                        flex-direction: column;
+                        align-items: flex-start;
+                        gap: 16px;
+                        padding: 20px;
+                    }
+                    .header-left {
+                        width: 100%;
+                    }
+                    .greeting-text {
+                        font-size: 24px;
+                    }
+                    .date-display {
+                        font-size: 12px;
+                        flex-wrap: wrap;
+                    }
+                    .header-controls {
+                        width: 100%;
+                        flex-direction: column; /* Stack controls */
+                        gap: 10px;
+                    }
+                    .header-controls > div, 
+                    .header-controls > button {
+                        width: 100% !important; /* Full width for selects and buttons */
+                        margin-right: 0 !important;
+                    }
+                    .stat-cards {
+                        grid-template-columns: 1fr; /* Stack stat cards */
+                        gap: 16px;
+                    }
+                    .wallet-cards-grid {
+                        grid-template-columns: 1fr; /* Stack wallet cards */
+                        gap: 12px;
+                    }
+                    .tab-content-grid {
+                        grid-template-columns: 1fr;
+                        gap: 20px;
+                    }
+                    
+                    /* Hide Table Head on Mobile for Card View in ExpenseList */
+                    .mobile-hide-thead thead {
+                        display: none;
+                    }
+                    
+                    /* Utility for ExpenseList Card View */
+                    .expense-card-mobile {
+                        display: flex; 
+                        flex-direction: column;
+                        padding: 16px;
+                        background: var(--bg-card);
+                        border: 1px solid var(--border);
+                        border-radius: 16px;
+                        margin-bottom: 12px;
+                        position: relative;
+                    }
+                    
+                    .expense-card-row {
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        margin-bottom: 8px;
+                    }
+                }
+            `}</style>
+            {/* Mobile Bottom Navigation */}
+            <div className="mobile-bottom-nav">
+                {tabs.map(tab => (
+                    <button
+                        key={tab.id}
+                        className={`mobile-nav-item ${activeTab === tab.id ? 'active' : ''}`}
+                        onClick={() => setActiveTab(tab.id)}
+                    >
+                        <div className="nav-icon">{tab.icon}</div>
+                        <span className="nav-label">{tab.label}</span>
+                    </button>
+                ))}
+            </div>
+
+            <style>{`
+                .elite-broadcast-overlay {
+                    position: fixed;
+                    inset: 0;
+                    z-index: 10000;
+                    background: rgba(0, 0, 0, 0.7);
+                    backdrop-filter: blur(8px);
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
                     padding: 20px;
-                    animation: fadeIn 0.3s ease;
                 }
                 .broadcast-box {
                     width: 100%;
@@ -817,37 +1017,181 @@ const Dashboard = () => {
                     position: relative;
                     box-shadow: 0 30px 60px -12px rgba(0,0,0,0.5), 0 0 20px rgba(0,0,0,0.3);
                 }
-                .broadcast-accent { height: 4px; width: 100%; }
-                .broadcast-header { padding: 30px 30px 20px; display: flex; align-items: center; gap: 20px; }
+                .broadcast-accent {height: 4px; width: 100%; }
+                .broadcast-header {padding: 30px 30px 20px; display: flex; align-items: center; gap: 20px; }
                 .broadcast-icon-box {
                     width: 50px; height: 50px; border-radius: 12px;
                     display: flex; align-items: center; justify-content: center;
                     font-size: 24px;
                 }
-                .broadcast-title h3 { margin: 0; font-size: 11px; font-weight: 900; letter-spacing: 2px; color: #555; }
-                .broadcast-title span { font-size: 14px; font-weight: 800; color: #fff; }
-                
-                .broadcast-body { padding: 0 30px 30px; }
-                .broadcast-body p { margin: 0; color: #aaa; line-height: 1.6; font-size: 15px; }
-                
-                .broadcast-footer { padding: 20px 30px 30px; display: flex; flex-direction: column; gap: 12px; }
+                .broadcast-title h3 {margin: 0; font-size: 11px; font-weight: 900; letter-spacing: 2px; color: #555; }
+                .broadcast-title span {font-size: 14px; font-weight: 800; color: #fff; }
+
+                .broadcast-body {padding: 0 30px 30px; }
+                .broadcast-body p {margin: 0; color: #aaa; line-height: 1.6; font-size: 15px; }
+
+                .broadcast-footer {padding: 20px 30px 30px; display: flex; flex-direction: column; gap: 12px; }
                 .acknowledge-btn {
                     background: #fff; color: #000; border: none; padding: 14px;
                     border-radius: 12px; font-weight: 800; font-size: 14px;
                     cursor: pointer; transition: 0.2s;
                 }
-                .acknowledge-btn:hover { transform: scale(1.02); }
+                .acknowledge-btn:hover {transform: scale(1.02); }
                 .refresh-bulletin-btn {
                     background: rgba(255,255,255,0.03); color: #444; border: 1px solid #151515;
                     padding: 12px; border-radius: 12px; font-weight: 700; font-size: 12px;
                     cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
                 }
-                .refresh-bulletin-btn:hover { background: #111; color: #fff; }
+                .refresh-bulletin-btn:hover {background: #111; color: #fff; }
 
-                @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-                @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+                @keyframes fadeIn {from {opacity: 0; } to {opacity: 1; } }
+                @keyframes slideUp {from {transform: translateY(20px); opacity: 0; } to {transform: translateY(0); opacity: 1; } }
+
+                /* Mobile Bottom Navigation Styles */
+                .mobile-bottom-nav {
+                    display: none;
+                }
+                
+                @media (max-width: 768px) {
+                    .dash-container {
+                        padding-bottom: 80px; /* Space for bottom nav */
+                    }
+                    .dash-sidebar {
+                        display: none; /* Hide sidebar on mobile */
+                    }
+                    .dash-main-content {
+                        margin-left: 0;
+                        padding: 16px;
+                        padding-top: 80px; /* Space for fixed navbar */
+                        padding-bottom: 200px; /* INCREASED PADDING TO 200px to fix cutoff */
+                    }
+                    
+                    /* Enable Bottom Nav */
+                    .mobile-bottom-nav {
+                        position: fixed;
+                        bottom: 0;
+                        left: 0;
+                        right: 0;
+                        height: 70px;
+                        background: rgba(8, 8, 8, 0.95);
+                        backdrop-filter: blur(12px);
+                        border-top: 1px solid rgba(255, 255, 255, 0.1);
+                        display: flex;
+                        justify-content: space-evenly; /* Changed from space-around for better spacing */
+                        align-items: center;
+                        z-index: 9999;
+                        padding-bottom: env(safe-area-inset-bottom);
+                        padding-left: 4px; /* Added padding to prevent edge cutoff */
+                        padding-right: 4px;
+                    }
+
+                    .mobile-nav-item {
+                        background: none;
+                        border: none;
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                        justify-content: center;
+                        gap: 4px;
+                        color: var(--text-muted);
+                        padding: 8px 4px; /* Reduced side padding on items */
+                        flex: 1;
+                        min-width: 0; /* Allows shrinking */
+                        transition: all 0.3s ease;
+                    }
+
+                    .mobile-nav-item.active {
+                        color: var(--primary);
+                    }
+
+                    .mobile-nav-item .nav-icon {
+                        font-size: 18px; /* Slightly smaller icons */
+                        transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                    }
+
+                    .mobile-nav-item.active .nav-icon {
+                        transform: translateY(-2px);
+                    }
+
+                    .mobile-nav-item .nav-label {
+                        font-size: 9px; /* Smaller font to prevent cutoff */
+                        font-weight: 600;
+                        white-space: nowrap;
+                        overflow: hidden;
+                        text-overflow: ellipsis;
+                        width: 100%;
+                        text-align: center;
+                    }
+
+                    /* Adjust FAB position to not overlap with bottom nav */
+                    .fab-container {
+                        bottom: 90px !important; /* Move up above nav */
+                        right: 20px !important;
+                    }
+
+                    /* Header adjustments */
+                    .dashboard-header-glass {
+                        flex-direction: column;
+                        align-items: flex-start;
+                        gap: 16px;
+                        padding: 20px;
+                    }
+                    .header-left {
+                        width: 100%;
+                    }
+                    .greeting-text {
+                        font-size: 24px;
+                    }
+                    .date-display {
+                        font-size: 12px;
+                        flex-wrap: wrap;
+                    }
+                    .header-controls {
+                        width: 100%;
+                        flex-direction: column; 
+                        gap: 10px;
+                    }
+                    .header-controls > div, 
+                    .header-controls > button {
+                        width: 100% !important; 
+                        margin-right: 0 !important;
+                    }
+                    .stat-cards {
+                        grid-template-columns: 1fr; 
+                        gap: 16px;
+                    }
+                    .wallet-cards-grid {
+                        grid-template-columns: 1fr; 
+                        gap: 12px;
+                    }
+                    .tab-content-grid {
+                        grid-template-columns: 1fr;
+                        gap: 20px;
+                    }
+                    
+                    /* Utility for ExpenseList Card View */
+                    .mobile-hide-thead thead {
+                        display: none;
+                    }
+                    .expense-card-mobile {
+                        display: flex; 
+                        flex-direction: column;
+                        padding: 16px;
+                        background: var(--bg-card);
+                        border: 1px solid var(--border);
+                        border-radius: 16px;
+                        margin-bottom: 12px;
+                        position: relative;
+                    }
+                    .expense-card-row {
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        margin-bottom: 8px;
+                    }
+                }
             `}</style>
-        </div>
+        </div >
     );
 };
 
