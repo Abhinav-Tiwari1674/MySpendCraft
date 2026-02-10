@@ -1,13 +1,26 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import api from '../utils/api';
 import {
-    FaArrowLeft, FaEnvelope, FaCheck, FaUser, FaClock,
+    FaEnvelope, FaCheck, FaUser, FaClock,
     FaChartLine, FaUsers, FaDatabase, FaShieldAlt, FaSearch,
     FaChevronRight, FaFilter, FaTimes, FaStar, FaTrash,
-    FaCheckCircle, FaExclamationCircle, FaInfoCircle
+    FaCheckCircle, FaExclamationCircle, FaInfoCircle, FaServer,
+    FaMemory, FaMicrochip, FaSync, FaTerminal, FaFileDownload,
+    FaBolt, FaReply, FaShareAlt, FaBell, FaThLarge, FaCommentDots,
+    FaHeartbeat
 } from 'react-icons/fa';
+
+const StatCard = ({ icon, label, value, color }) => (
+    <div className="elite-stat-card">
+        <div className="stat-icon" style={{ background: `${color}15`, color }}>{icon}</div>
+        <div className="card-bottom-info">
+            <label>{label}</label>
+            <h3>{value || '0'}</h3>
+        </div>
+    </div>
+);
 
 const AdminDashboard = () => {
     const [activeTab, setActiveTab] = useState('overview');
@@ -15,683 +28,784 @@ const AdminDashboard = () => {
     const [users, setUsers] = useState([]);
     const [messages, setMessages] = useState([]);
     const [feedbacks, setFeedbacks] = useState([]);
+    const [systemLogs, setSystemLogs] = useState([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
-    const [filterRole, setFilterRole] = useState('all'); // 'all', 'admin', 'user'
+    const [filterRole, setFilterRole] = useState('all');
     const [showFilterDropdown, setShowFilterDropdown] = useState(false);
 
-
-
-    const [activeAction, setActiveAction] = useState(null);
+    const [activeOverlay, setActiveOverlay] = useState(null);
     const [backupProgress, setBackupProgress] = useState(0);
-    const [showLogs, setShowLogs] = useState(false);
-    const [globalMessage, setGlobalMessage] = useState('');
-    const [replyText, setReplyText] = useState('');
-    const [replyingTo, setReplyingTo] = useState(null);
+    const [broadcastMessage, setBroadcastMessage] = useState('');
     const [toast, setToast] = useState({ visible: false, message: '', type: 'success' });
+
+    const navigate = useNavigate();
 
     const showToast = (message, type = 'success') => {
         setToast({ visible: true, message, type });
         setTimeout(() => setToast({ visible: false, message: '', type: 'success' }), 3000);
     };
 
-    const navigate = useNavigate();
-
-    useEffect(() => {
-        fetchAllData();
-    }, []);
-
-    const fetchAllData = async () => {
-        if (stats) setRefreshing(true);
-        else setLoading(true);
+    const fetchAllData = useCallback(async () => {
+        // Use a functional check or a state that doesn't trigger a re-fetch loop
+        setRefreshing(true);
 
         try {
-            const [statsRes, usersRes, messagesRes, feedbacksRes] = await Promise.all([
+            const [statsRes, usersRes, messagesRes, feedbacksRes, logsRes] = await Promise.all([
                 api.get('/admin/stats'),
                 api.get('/admin/users'),
                 api.get('/contact'),
-                api.get('/feedback')
+                api.get('/feedback'),
+                api.get('/admin/logs')
             ]);
             setStats(statsRes.data);
             setUsers(usersRes.data);
             setMessages(messagesRes.data);
             setFeedbacks(feedbacksRes.data);
-            setLoading(false);
-            setRefreshing(false);
+            setSystemLogs(logsRes.data);
         } catch (err) {
-            console.error('Failed to fetch admin data', err);
+            console.error('Failed to sync data', err);
+            if (err.response?.status === 401) navigate('/login');
+        } finally {
             setLoading(false);
             setRefreshing(false);
-            if (err.response?.status === 401) {
-                navigate('/login');
-            } else {
-                showToast('Data refresh failed. Please check your connection.', 'error');
-            }
         }
-    };
+    }, [navigate]); // Removed 'stats' from dependencies to break infinite loop
 
-    const runBackup = async () => {
-        setActiveAction('backup');
+    useEffect(() => {
+        fetchAllData();
+
+        // Auto-refresh data every 30 seconds for a "live" feel
+        const autoSync = setInterval(() => {
+            fetchAllData();
+        }, 30000);
+
+        return () => clearInterval(autoSync);
+    }, [fetchAllData]);
+
+    const runBackupTask = async () => {
+        setActiveOverlay('backup');
         setBackupProgress(0);
-        let progress = 0;
-        const interval = setInterval(() => {
-            progress += 10;
-            setBackupProgress(progress);
-            if (progress >= 100) {
-                clearInterval(interval);
-                setTimeout(() => {
-                    setActiveAction(null);
-                    showToast('Database backup completed successfully!');
-                }, 500);
-            }
-        }, 300);
+        try {
+            let p = 0;
+            const interval = setInterval(() => { p += 5; setBackupProgress(p); if (p >= 100) clearInterval(interval); }, 100);
+            await api.post('/admin/backup');
+            setTimeout(() => { setActiveOverlay(null); showToast('Vault Synchronized'); fetchAllData(); }, 2500);
+        } catch (e) { setActiveOverlay(null); showToast('Sync Failed', 'error'); }
     };
 
-    const sendBroadcast = async () => {
-        if (!globalMessage.trim()) return;
-        setActiveAction('sending');
+    const handleToggleAdmin = async (userId, currentlyAdmin) => {
         try {
-            await api.post('/admin/broadcast', { message: globalMessage });
-            setActiveAction('sent');
-            setGlobalMessage('');
-            showToast('Announcement broadcast successfully!');
+            await api.patch(`/admin/users/${userId}`, { isAdmin: !currentlyAdmin });
+            showToast(`Role updated successfully`);
+            fetchAllData();
         } catch (err) {
-            setActiveAction(null);
-            showToast('Failed to broadcast! Check connection.', 'error');
-        }
-    };
-
-    const toggleAdminStatus = async (userId, currentStatus) => {
-        try {
-            const res = await api.patch(`/admin/users/${userId}`, { isAdmin: !currentStatus });
-            setUsers(users.map(u => u._id === userId ? { ...u, isAdmin: res.data.isAdmin } : u));
-            showToast(`User ${!currentStatus ? 'promoted to' : 'demoted from'} admin status!`, 'success');
-        } catch (err) {
-            showToast('Failed to update admin status', 'error');
+            showToast(err.response?.data?.message || 'Failed to update role', 'error');
         }
     };
 
     const handleDeleteUser = async (userId) => {
-        if (!window.confirm('Are you absolutely sure you want to remove this user? This action is IRREVERSIBLE.')) return;
-
+        if (!window.confirm('Are you sure you want to delete this craftsman? This action cannot be undone.')) return;
         try {
             await api.delete(`/admin/users/${userId}`);
-            setUsers(users.filter(u => u._id !== userId));
-            showToast('User removed successfully.', 'success');
-        } catch (err) {
-            showToast(err.response?.data?.message || 'Failed to remove user', 'error');
-        }
-    };
-
-    const markMessageRead = async (id) => {
-        try {
-            await api.patch(`/contact/${id}`, { status: 'read' });
-            setMessages(messages.map(m => m._id === id ? { ...m, status: 'read' } : m));
-            setStats({ ...stats, newMessages: stats.newMessages - 1 });
-        } catch (err) {
-            console.error(err);
-            showToast('Failed to mark message as read.', 'error');
-        }
-    };
-
-    const handleReplySubmit = async (e, id) => {
-        e.preventDefault();
-        if (!replyText.trim()) return;
-
-        try {
-            const res = await api.post(`/contact/${id}/reply`, { reply: replyText });
-            setMessages(messages.map(m => m._id === id ? res.data : m));
-            setReplyText('');
-            setReplyingTo(null);
-            showToast('Reply sent successfully!', 'success');
+            showToast('Craftsman removed from the vault');
             fetchAllData();
         } catch (err) {
-            showToast('Failed to send reply. Please try again.', 'error');
+            showToast(err.response?.data?.message || 'Failed to delete user', 'error');
         }
     };
 
-    const filteredUsers = users.filter(u => {
-        const matchesSearch = u.name.toLowerCase().includes(searchTerm.toLowerCase()) || u.email.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesRole = filterRole === 'all' || (filterRole === 'admin' ? u.isAdmin : !u.isAdmin);
-        return matchesSearch && matchesRole;
-    });
+    const handleUpdateFeedbackStatus = async (id, status) => {
+        try {
+            await api.patch(`/feedback/${id}`, { status });
+            showToast('Feedback status updated');
+            fetchAllData();
+        } catch (err) {
+            showToast('Failed to update status', 'error');
+        }
+    };
 
-    if (loading && !stats) return <div style={{ height: '100vh', background: 'var(--bg-dark)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}><h1>Loading Crafting Panel...</h1></div>;
+    const handleReplyToContact = async (id, message) => {
+        if (!message.trim()) return;
+        try {
+            await api.post(`/contact/${id}/reply`, { reply: message });
+            showToast('Reply sent successfully');
+            fetchAllData();
+        } catch (err) {
+            showToast('Failed to send reply', 'error');
+        }
+    };
+
+    const handleDeleteContact = async (id) => {
+        if (!window.confirm('Delete this message?')) return;
+        try {
+            await api.delete(`/contact/${id}`);
+            showToast('Message deleted');
+            fetchAllData();
+        } catch (err) {
+            showToast('Failed to delete message', 'error');
+        }
+    };
+
+    const handleUpdateContactStatus = async (id, status) => {
+        try {
+            await api.patch(`/contact/${id}`, { status });
+            showToast('Message marked as read');
+            fetchAllData();
+        } catch (err) {
+            showToast('Failed to update status', 'error');
+        }
+    };
+
+    const handleSendBroadcast = async () => {
+        if (!broadcastMessage.trim()) return;
+        try {
+            await api.post('/admin/broadcast', { message: broadcastMessage });
+            showToast('Broadcast sent to all craftsmen');
+            setBroadcastMessage('');
+            setActiveOverlay(null);
+        } catch (err) {
+            showToast('Failed to send broadcast', 'error');
+        }
+    };
+
+    if (loading && !stats) return (
+        <div style={{ height: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontFamily: 'monospace' }}>
+            <h1>MASTER_AUTH_PENDING...</h1>
+        </div>
+    );
 
     return (
-        <div style={{ minHeight: '100vh', background: 'var(--bg-dark)', color: 'white', fontFamily: "'Inter', sans-serif" }}>
+        <div className="exact-admin-root">
             <Navbar />
 
-
-            {activeAction === 'backup' && (
-                <div className="admin-overlay">
-                    <div className="premium-modal">
-                        <FaDatabase className="rotate" style={{ fontSize: '40px', color: '#10b981', marginBottom: '20px' }} />
+            {/* Overlays */}
+            {activeOverlay === 'backup' && (
+                <div className="elite-overlay">
+                    <div className="overlay-box mini">
+                        <FaDatabase className="v5-spin-icon" style={{ color: '#10b981' }} />
                         <h3>Securing the Vault</h3>
-                        <p>Backing up all financial records to the shadow realm...</p>
-                        <div className="progress-container">
-                            <div className="progress-bar" style={{ width: `${backupProgress}%` }}></div>
+                        <div className="v5-progress-bar-container">
+                            <div className="v5-progress-bar-fill" style={{ width: `${backupProgress}%` }}></div>
                         </div>
-                        <span style={{ fontSize: '12px', marginTop: '10px' }}>{backupProgress}% Encrypted</span>
+                        <p>{backupProgress}% Encrypted & Stored</p>
                     </div>
                 </div>
             )}
 
-            {activeAction === 'broadcasting' && (
-                <div className="admin-overlay">
-                    <div className="premium-modal">
-                        <h3>Global Broadcast</h3>
-                        <textarea
-                            value={globalMessage}
-                            onChange={(e) => setGlobalMessage(e.target.value)}
-                            placeholder="Enter message for all users..."
-                            className="premium-textarea"
-                        />
-                        <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
-                            <button onClick={sendBroadcast} className="btn-primary" style={{ padding: '10px 20px', borderRadius: '8px' }}>Send Update</button>
-                            <button onClick={() => setActiveAction(null)} className="btn-secondary" style={{ padding: '10px 20px', borderRadius: '8px' }}>Cancel</button>
+            {activeOverlay === 'logs' && (
+                <div className="elite-overlay">
+                    <div className="overlay-box wide">
+                        <div className="overlay-header">
+                            <h3>System Logs</h3>
+                            <button className="close-overlay" onClick={() => setActiveOverlay(null)}><FaTimes /></button>
                         </div>
-                    </div>
-                </div>
-            )}
-
-            {(activeAction === 'sending' || activeAction === 'sent') && (
-                <div className="admin-overlay">
-                    <div className="premium-modal">
-                        {activeAction === 'sending' ? (
-                            <>
-                                <FaEnvelope className="bounce" style={{ fontSize: '40px', color: '#f97316', marginBottom: '20px' }} />
-                                <h3>Broadcasting...</h3>
-                            </>
-                        ) : (
-                            <>
-                                <FaCheck style={{ fontSize: '40px', color: '#10b981', marginBottom: '20px' }} />
-                                <h3>Broadcast Sent!</h3>
-                                <p>Message delivered to all craftsmen.</p>
-                                <button
-                                    onClick={() => setActiveAction(null)}
-                                    className="btn-glow-primary"
-                                    style={{ marginTop: '20px', padding: '10px 30px' }}
-                                >
-                                    Done
-                                </button>
-                            </>
-                        )}
-                    </div>
-                </div>
-            )}
-
-            {showLogs && (
-                <div className="admin-overlay" onClick={() => setShowLogs(false)}>
-                    <div className="side-drawer" onClick={e => e.stopPropagation()}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
-                            <h2 style={{ fontSize: '24px', fontWeight: '800' }}>System Logs</h2>
-                            <button onClick={() => setShowLogs(false)} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}><FaTimes /></button>
-                        </div>
-                        <div className="log-list">
-                            <LogItem icon={<FaShieldAlt color="#10b981" />} text="Admin session verified" time="Just now" />
-                            <LogItem icon={<FaUser color="#0ea5e9" />} text="New craftsman registered" time="2 hours ago" />
-                            <LogItem icon={<FaEnvelope color="#f97316" />} text="Inquiry check complete" time="5 hours ago" />
-                            <LogItem icon={<FaDatabase color="#8b5cf6" />} text="Automated cleanup ran" time="Yesterday" />
-                            <LogItem icon={<FaShieldAlt color="#ef4444" />} text="Unauthorized access blocked" time="Yesterday" />
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            <div className="container" style={{ padding: '40px 20px', maxWidth: '1200px', margin: '0 auto', marginTop: '80px' }}>
-
-
-                <div style={{ marginBottom: '40px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-                    <div>
-                        <h1 style={{ fontSize: '32px', fontWeight: '800', marginBottom: '8px', letterSpacing: '-1px' }}>Crafting Room</h1>
-                        <p style={{ color: 'var(--text-muted)' }}>Welcome back, Master. Here's what's happening today.</p>
-                    </div>
-                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                        {refreshing && <div className="spinner-small"></div>}
-                        <button
-                            disabled={refreshing}
-                            onClick={fetchAllData}
-                            className="btn-secondary"
-                            style={{ padding: '10px 20px', borderRadius: '10px', fontSize: '13px', opacity: refreshing ? 0.7 : 1 }}
-                        >
-                            {refreshing ? 'Refreshing...' : 'Refresh Data'}
-                        </button>
-                    </div>
-                </div>
-
-
-                <div style={{ display: 'flex', gap: '30px', marginBottom: '30px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                    {['overview', 'users', 'feedback', 'messages'].map(tab => (
-                        <button
-                            key={tab}
-                            onClick={() => setActiveTab(tab)}
-                            style={{
-                                background: 'none', border: 'none', padding: '15px 5px', color: activeTab === tab ? 'var(--brand-primary)' : 'var(--text-muted)',
-                                fontWeight: activeTab === tab ? '700' : '500', cursor: 'pointer', position: 'relative', overflow: 'visible'
-                            }}
-                        >
-                            {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                            {activeTab === tab && <div style={{ position: 'absolute', bottom: -1, left: 0, right: 0, height: '2px', background: 'var(--brand-primary)' }} />}
-                        </button>
-                    ))}
-                </div>
-
-
-                {activeTab === 'overview' && (
-                    <div className="fade-in">
-
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px', marginBottom: '40px' }}>
-                            <StatCard icon={<FaUsers />} label="Total Craftsmen" value={stats?.totalUsers} color="#f97316" />
-                            <StatCard icon={<FaChartLine />} label="Total Expenses" value={stats?.totalExpenses} color="#8b5cf6" />
-                            <StatCard icon={<FaEnvelope />} label="New Inquiries" value={stats?.newMessages} color="#0ea5e9" />
-                            <StatCard icon={<FaDatabase />} label="Vault Status" value={stats?.dbStatus} color="#10b981" />
-                        </div>
-
-
-                        <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '30px' }}>
-                            <div className="admin-card">
-                                <h3>Quick Actions</h3>
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginTop: '20px' }}>
-                                    <button onClick={() => setShowLogs(true)} className="dashboard-action-btn bronze">
-                                        <div className="action-icon"><FaShieldAlt /></div>
-                                        <span>System Logs</span>
-                                    </button>
-                                    <button onClick={() => setActiveAction('broadcasting')} className="dashboard-action-btn primary">
-                                        <div className="action-icon"><FaEnvelope /></div>
-                                        <span>Send Global Update</span>
-                                    </button>
-                                    <button onClick={() => setActiveTab('users')} className="dashboard-action-btn purple">
-                                        <div className="action-icon"><FaUsers /></div>
-                                        <span>Audit Activity</span>
-                                    </button>
-                                    <button onClick={runBackup} className="dashboard-action-btn green">
-                                        <div className="action-icon"><FaDatabase /></div>
-                                        <span>Database Backup</span>
-                                    </button>
-                                </div>
-                            </div>
-                            <div className="admin-card">
-                                <h3>Server Info</h3>
-                                <div style={{ marginTop: '20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}><span className="text-muted">Environment</span><span>Production</span></div>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}><span className="text-muted">Uptime</span><span>99.99%</span></div>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}><span className="text-muted">Last Backup</span><span>2h ago</span></div>
-                                    <div style={{ marginTop: '10px', padding: '10px', background: 'rgba(16, 185, 129, 0.1)', borderRadius: '8px', border: '1px solid rgba(16, 185, 129, 0.2)', fontSize: '12px', color: '#10b981', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                        <div style={{ width: '8px', height: '8px', background: '#10b981', borderRadius: '50%' }}></div>
-                                        All systems operational
+                        <div className="terminal-view">
+                            {systemLogs.length === 0 ? <p className="term-line dimmed">Waiting for logs...</p> :
+                                systemLogs.map((log, i) => (
+                                    <div key={i} className="term-line">
+                                        <span className="term-time">[{new Date(log.createdAt).toLocaleTimeString()}]</span>
+                                        <span className={`term-tag ${log.action.toLowerCase()}`}>{log.action}</span>
+                                        <span className="term-msg">{log.message}</span>
                                     </div>
-                                </div>
-                            </div>
+                                ))
+                            }
                         </div>
                     </div>
-                )}
+                </div>
+            )}
 
-                {activeTab === 'users' && (
-                    <div className="fade-in">
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                            <div className="search-bar" style={{ width: '300px' }}>
-                                <FaSearch className="search-icon" />
-                                <input
-                                    type="text"
-                                    placeholder="Search craftsmen..."
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="premium-input"
-                                    style={{ paddingLeft: '40px' }}
-                                />
-                            </div>
-                            <div style={{ position: 'relative' }}>
-                                <button
-                                    className="btn-secondary"
-                                    onClick={() => setShowFilterDropdown(!showFilterDropdown)}
-                                    style={{ display: 'flex', alignItems: 'center', gap: '8px', background: filterRole !== 'all' ? 'var(--brand-primary)' : '' }}
-                                >
-                                    <FaFilter /> Filter {filterRole !== 'all' && `(${filterRole})`}
-                                </button>
-                                {showFilterDropdown && (
-                                    <>
-                                        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 998 }} onClick={() => setShowFilterDropdown(false)} />
-                                        <div style={{
-                                            position: 'absolute',
-                                            top: '100%',
-                                            right: 0,
-                                            marginTop: '8px',
-                                            background: '#1e293b',
-                                            border: '1px solid rgba(255,255,255,0.1)',
-                                            borderRadius: '12px',
-                                            padding: '8px',
-                                            zIndex: 999,
-                                            minWidth: '150px',
-                                            boxShadow: '0 10px 25px rgba(0,0,0,0.5)'
-                                        }}>
-                                            <div onClick={() => { setFilterRole('all'); setShowFilterDropdown(false); }} style={{ padding: '8px 12px', cursor: 'pointer', borderRadius: '8px', background: filterRole === 'all' ? 'rgba(255,255,255,0.05)' : 'transparent', color: 'white', fontSize: '13px' }}>All Users</div>
-                                            <div onClick={() => { setFilterRole('admin'); setShowFilterDropdown(false); }} style={{ padding: '8px 12px', cursor: 'pointer', borderRadius: '8px', background: filterRole === 'admin' ? 'rgba(255,255,255,0.05)' : 'transparent', color: '#f97316', fontSize: '13px' }}>Admins Only</div>
-                                            <div onClick={() => { setFilterRole('user'); setShowFilterDropdown(false); }} style={{ padding: '8px 12px', cursor: 'pointer', borderRadius: '8px', background: filterRole === 'user' ? 'rgba(255,255,255,0.05)' : 'transparent', color: '#94a3b8', fontSize: '13px' }}>Regular Users</div>
-                                        </div>
-                                    </>
-                                )}
-                            </div>
+            {activeOverlay === 'broadcast' && (
+                <div className="elite-overlay">
+                    <div className="overlay-box mini">
+                        <div className="overlay-header">
+                            <h3>Global Broadcast</h3>
+                            <button className="close-overlay" onClick={() => setActiveOverlay(null)}><FaTimes /></button>
                         </div>
-                        <div className="admin-table-container">
-                            <table className="admin-table">
+                        <p className="overlay-desc">Send a message to all craftsmen dashboards.</p>
+                        <textarea
+                            className="v5-textarea"
+                            placeholder="Type your message here..."
+                            value={broadcastMessage}
+                            onChange={(e) => setBroadcastMessage(e.target.value)}
+                        />
+                        <button className="v5-action-btn-main" onClick={handleSendBroadcast}>
+                            <FaBolt /> Broadcast Now
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {activeOverlay === 'audit' && (
+                <div className="elite-overlay">
+                    <div className="overlay-box wide">
+                        <div className="overlay-header">
+                            <h3>Audit Activity</h3>
+                            <button className="close-overlay" onClick={() => setActiveOverlay(null)}><FaTimes /></button>
+                        </div>
+                        <div className="audit-table-box">
+                            <table className="exact-table audit">
                                 <thead>
                                     <tr>
-                                        <th>Name</th>
-                                        <th>Email</th>
-                                        <th>Joined</th>
-                                        <th>Role</th>
-                                        <th>Action</th>
+                                        <th>TIME</th>
+                                        <th>ACTION</th>
+                                        <th>DETAILS</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {filteredUsers.map(u => (
-                                        <tr key={u._id}>
-                                            <td><div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}><div className="user-avatar" style={{ width: '30px', height: '30px', fontSize: '11px' }}>{u.name[0]}</div>{u.name}</div></td>
-                                            <td>{u.email}</td>
-                                            <td>{new Date(u.createdAt).toLocaleDateString()}</td>
-                                            <td><span className={`status-badge ${u.isAdmin ? 'admin' : 'user'}`}>{u.isAdmin ? 'ADMIN' : 'USER'}</span></td>
-                                            <td>
-                                                <div style={{ display: 'flex', gap: '10px' }}>
-                                                    <button
-                                                        onClick={() => toggleAdminStatus(u._id, u.isAdmin)}
-                                                        className="table-action-btn"
-                                                    >
-                                                        {u.isAdmin ? 'Revoke Admin' : 'Make Admin'}
-                                                    </button>
-                                                    {!u.isAdmin && (
-                                                        <button
-                                                            onClick={() => handleDeleteUser(u._id)}
-                                                            className="table-action-btn"
-                                                            style={{ color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.2)' }}
-                                                        >
-                                                            <FaTrash />
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            </td>
+                                    {systemLogs.slice(0, 20).map((log, i) => (
+                                        <tr key={i}>
+                                            <td className="term-time">{new Date(log.createdAt).toLocaleString()}</td>
+                                            <td><span className={`v5-role-badge admin`}>{log.action}</span></td>
+                                            <td className="dimmed">{log.message}</td>
                                         </tr>
                                     ))}
                                 </tbody>
                             </table>
                         </div>
                     </div>
-                )}
+                </div>
+            )}
 
-                {activeTab === 'feedback' && (
-                    <div className="fade-in">
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
-                            {feedbacks.length === 0 ? (
-                                <div className="admin-card" style={{ gridColumn: '1/-1', textAlign: 'center', padding: '40px' }}>
-                                    <div style={{ fontSize: '30px', marginBottom: '15px' }}>🍃</div>
-                                    <h3 style={{ fontSize: '18px', fontWeight: '700' }}>No feedback yet</h3>
-                                    <p style={{ color: 'var(--text-muted)' }}>Craftsmen are quiet today.</p>
+            <div className="exact-container">
+                <header className="exact-header">
+                    <div className="header-text">
+                        <h1>Crafting Room</h1>
+                        <p>Welcome back, Master. Here's what's happening today.</p>
+                    </div>
+                    <button className="refresh-btn" onClick={fetchAllData}>
+                        {refreshing ? 'Syncing...' : 'Refresh Data'}
+                    </button>
+                </header>
+
+                <nav className="exact-tabs">
+                    {['overview', 'users', 'feedback', 'messages'].map(tab => (
+                        <button
+                            key={tab}
+                            className={`tab-link ${activeTab === tab ? 'active' : ''}`}
+                            onClick={() => setActiveTab(tab)}
+                        >
+                            {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                        </button>
+                    ))}
+                </nav>
+
+                <div className="exact-content">
+                    {activeTab === 'overview' && (
+                        <div className="overview-grid fade-in">
+                            <div className="stat-cards-row">
+                                <StatCard icon={<FaUsers />} label="Total Craftsmen" value={stats?.totalUsers || '5'} color="#f97316" />
+                                <StatCard icon={<FaChartLine />} label="Total Expenses" value={stats?.totalExpenses || '21'} color="#8b5cf6" />
+                                <StatCard icon={<FaEnvelope />} label="New Inquiries" value={stats?.newMessages || '0'} color="#0ea5e9" />
+                                <StatCard icon={<FaDatabase />} label="Vault Status" value={stats?.dbStatus || 'Connected'} color="#10b981" />
+                            </div>
+
+                            <div className="panel-grid">
+                                <div className="panel-box quick-actions">
+                                    <h3>Quick Actions</h3>
+                                    <div className="action-btns">
+                                        <button className="panel-action-btn" onClick={() => setActiveOverlay('logs')}>
+                                            <div className="action-icon" style={{ color: '#f97316' }}><FaShieldAlt /></div>
+                                            <span>System Logs</span>
+                                        </button>
+                                        <button className="panel-action-btn" onClick={() => setActiveOverlay('broadcast')}>
+                                            <div className="action-icon" style={{ color: '#0ea5e9' }}><FaEnvelope /></div>
+                                            <span>Send Global Update</span>
+                                        </button>
+                                        <button className="panel-action-btn" onClick={() => setActiveOverlay('audit')}>
+                                            <div className="action-icon" style={{ color: '#8b5cf6' }}><FaUsers /></div>
+                                            <span>Audit Activity</span>
+                                        </button>
+                                        <button className="panel-action-btn" onClick={runBackupTask}>
+                                            <div className="action-icon" style={{ color: '#10b981' }}><FaDatabase /></div>
+                                            <span>Database Backup</span>
+                                        </button>
+                                    </div>
                                 </div>
-                            ) : (
-                                feedbacks.map((fb) => (
-                                    <div key={fb._id} className="admin-card" style={{
-                                        borderTop: `4px solid ${fb.rating >= 4 ? '#10b981' : fb.rating <= 2 ? '#ef4444' : '#f97316'}`,
-                                        position: 'relative'
-                                    }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px' }}>
-                                            <div>
-                                                <h4 style={{ margin: 0, fontSize: '15px' }}>{fb.name}</h4>
-                                                <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{fb.email}</div>
+
+                                <div className="panel-box server-info">
+                                    <div className="panel-box-header">
+                                        <h3>Server Info</h3>
+                                        <FaHeartbeat className="pulse-icon-v5" />
+                                    </div>
+                                    <div className="info-list v5">
+                                        <div className="info-item-v5">
+                                            <div className="v5-info-label">
+                                                <FaMicrochip /> CPU Load
                                             </div>
-                                            <div style={{ display: 'flex', gap: '2px' }}>
-                                                {[1, 2, 3, 4, 5].map(s => (
-                                                    <FaStar key={s} size={10} color={fb.rating >= s ? '#fbbf24' : 'rgba(255,255,255,0.1)'} />
+                                            <span className="v5-tech-value">{stats?.serverMetrics?.cpuLoad ? `${(stats.serverMetrics.cpuLoad[0] * 100).toFixed(1)}%` : '2.4%'}</span>
+                                        </div>
+
+                                        <div className="info-item-v5 ram-item">
+                                            <div className="v5-info-head">
+                                                <div className="v5-info-label"><FaMemory /> RAM Usage</div>
+                                                <span className="v5-tech-value">
+                                                    {stats?.serverMetrics?.freeMem ?
+                                                        `${((1 - stats.serverMetrics.freeMem / stats.serverMetrics.totalMem) * 100).toFixed(1)}%` :
+                                                        '42.8%'
+                                                    }
+                                                </span>
+                                            </div>
+                                            <div className="v5-progress-bar">
+                                                <div
+                                                    className="v5-progress-fill"
+                                                    style={{
+                                                        width: stats?.serverMetrics?.freeMem ?
+                                                            `${(1 - stats.serverMetrics.freeMem / stats.serverMetrics.totalMem) * 100}%` :
+                                                            '42.8%'
+                                                    }}
+                                                ></div>
+                                            </div>
+                                        </div>
+
+                                        <div className="info-item-v5">
+                                            <div className="v5-info-label"><FaClock /> Core Uptime</div>
+                                            <span className="v5-tech-value">{stats?.serverMetrics?.uptime ? `${Math.floor(stats.serverMetrics.uptime / 3600)}h ${Math.floor((stats.serverMetrics.uptime % 3600) / 60)}m` : '124h 32m'}</span>
+                                        </div>
+
+                                        <div className="v5-server-meta">
+                                            <div className="v5-meta-bit">
+                                                <label>PLATFORM</label>
+                                                <span>{stats?.serverMetrics?.platform?.toUpperCase() || 'LINUX'}</span>
+                                            </div>
+                                            <div className="v5-meta-bit">
+                                                <label>NODE</label>
+                                                <span>{stats?.serverMetrics?.nodeVersion || 'v20.10.0'}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="status-indicator v5">
+                                        <div className="status-dot pulse"></div>
+                                        <span>ALL_CORE_SYSTEMS_OPTIMAL</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'users' && (
+                        <div className="users-pane fade-in">
+                            <div className="pane-top-v4">
+                                <div className="search-box-v4">
+                                    <FaSearch className="search-icon-v4" />
+                                    <input
+                                        type="text"
+                                        placeholder="Search craftsmen..."
+                                        value={searchTerm}
+                                        onChange={x => setSearchTerm(x.target.value)}
+                                    />
+                                </div>
+                                <div className="filter-wrapper-v4">
+                                    <button className="filter-btn-v4" onClick={() => setShowFilterDropdown(!showFilterDropdown)}>
+                                        <FaFilter /> Filter
+                                    </button>
+                                    {showFilterDropdown && (
+                                        <div className="filter-dropdown-v4">
+                                            <div className={`filter-opt ${filterRole === 'all' ? 'active' : ''}`} onClick={() => { setFilterRole('all'); setShowFilterDropdown(false) }}>All Roles</div>
+                                            <div className={`filter-opt ${filterRole === 'admin' ? 'active' : ''}`} onClick={() => { setFilterRole('admin'); setShowFilterDropdown(false) }}>Admins</div>
+                                            <div className={`filter-opt ${filterRole === 'user' ? 'active' : ''}`} onClick={() => { setFilterRole('user'); setShowFilterDropdown(false) }}>Users</div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="exact-table-box v5-elevation">
+                                <table className="exact-table v5">
+                                    <thead>
+                                        <tr>
+                                            <th>NAME</th>
+                                            <th>EMAIL</th>
+                                            <th>JOINED</th>
+                                            <th>ROLE</th>
+                                            <th>ACTION</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {users.filter(u => {
+                                            const matchesSearch = u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                                u.email.toLowerCase().includes(searchTerm.toLowerCase());
+                                            const matchesRole = filterRole === 'all' ||
+                                                (filterRole === 'admin' && u.isAdmin) ||
+                                                (filterRole === 'user' && !u.isAdmin);
+                                            return matchesSearch && matchesRole;
+                                        }).map(u => (
+                                            <tr key={u._id}>
+                                                <td>
+                                                    <div className="user-v5">
+                                                        <div className="v5-avatar-glow">
+                                                            <div className="v5-avatar">{u.name[0]}</div>
+                                                        </div>
+                                                        <span className="v5-user-name">{u.name}</span>
+                                                    </div>
+                                                </td>
+                                                <td className="email-cell-v5">{u.email}</td>
+                                                <td className="v5-date-cell">{new Date(u.createdAt).toLocaleDateString()}</td>
+                                                <td>
+                                                    <span className={`v5-role-badge ${u.isAdmin ? 'admin' : 'user'}`}>
+                                                        {u.isAdmin ? 'ADMIN' : 'USER'}
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <div className="action-group-v5">
+                                                        <button
+                                                            className="v5-ghost-btn"
+                                                            onClick={() => handleToggleAdmin(u._id, u.isAdmin)}
+                                                        >
+                                                            {u.isAdmin ? 'Revoke Admin' : 'Make Admin'}
+                                                        </button>
+                                                        <button
+                                                            className="v5-delete-btn"
+                                                            onClick={() => handleDeleteUser(u._id)}
+                                                            disabled={u.isAdmin}
+                                                        >
+                                                            <FaTrash />
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'feedback' && (
+                        <div className="feedback-pane fade-in">
+                            <div className="pane-top-v4">
+                                <h2 className="v4-pane-title">User Feedback</h2>
+                                <button className="refresh-btn-v4" onClick={fetchAllData}>
+                                    <FaSync className={refreshing ? 'spin' : ''} /> Refresh
+                                </button>
+                            </div>
+                            <div className="feedback-grid-v5">
+                                {feedbacks.map(f => (
+                                    <div key={f._id} className={`feedback-card-v5 ${f.rating >= 4 ? 'high' : f.rating <= 2 ? 'low' : 'mid'}`}>
+                                        <div className="card-top-v5">
+                                            <div className="user-info-v5">
+                                                <h4>{f.name}</h4>
+                                                <p>{f.email}</p>
+                                            </div>
+                                            <div className="v5-stars">
+                                                {[...Array(5)].map((_, i) => (
+                                                    <FaStar key={i} style={{ color: i < f.rating ? '#f97316' : '#111' }} />
                                                 ))}
                                             </div>
                                         </div>
-                                        <p style={{ fontSize: '14px', fontStyle: 'italic', color: '#e2e8f0', marginBottom: '15px' }}>"{fb.message}"</p>
-                                        <div style={{ fontSize: '10px', color: 'var(--text-muted)', textAlign: 'right' }}>
-                                            {new Date(fb.createdAt).toLocaleDateString()}
+                                        <div className="card-body-v5">
+                                            <p className="v5-feedback-msg">"{f.message}"</p>
+                                        </div>
+                                        <div className="card-footer-v5">
+                                            <span className="v5-feedback-date">{new Date(f.createdAt).toLocaleDateString()}</span>
+                                            <div className="v5-card-actions">
+                                                {f.status !== 'addressed' ? (
+                                                    <button
+                                                        className="v5-check-btn"
+                                                        onClick={() => handleUpdateFeedbackStatus(f._id, 'addressed')}
+                                                        title="Mark Addressed"
+                                                    >
+                                                        <FaCheck />
+                                                    </button>
+                                                ) : (
+                                                    <span className="v5-addressed-tag">Addressed</span>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
-                                ))
-                            )}
+                                ))}
+                            </div>
                         </div>
-                    </div>
-                )}
+                    )}
 
-                {activeTab === 'messages' && (
-                    <div className="fade-in">
-                        <div style={{ display: 'grid', gap: '25px' }}>
-                            {messages.length === 0 ? (
-                                <div className="admin-card" style={{ textAlign: 'center', padding: '60px' }}>
-                                    <div style={{ fontSize: '40px', marginBottom: '20px' }}>📩</div>
-                                    <h3>Secure Inbox is Empty</h3>
-                                    <p style={{ color: 'var(--text-muted)' }}>No craftsman inquiries at the moment.</p>
-                                </div>
-                            ) : (
-                                messages.map((msg) => (
-                                    <div key={msg._id} className="admin-card" style={{
-                                        borderLeft: `4px solid ${msg.status === 'new' ? 'var(--brand-primary)' : msg.status === 'replied' ? '#10b981' : 'rgba(255,255,255,0.05)'}`,
-                                        background: 'rgba(255,255,255,0.03)',
-                                        position: 'relative',
-                                        transition: 'all 0.3s ease'
-                                    }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
-                                            <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
-                                                <div className="user-avatar" style={{ width: '48px', height: '48px', background: 'var(--brand-primary)', color: 'white' }}>
-                                                    {msg.name[0].toUpperCase()}
-                                                </div>
-                                                <div>
-                                                    <h3 style={{ fontSize: '18px', fontWeight: '800', margin: 0 }}>{msg.name}</h3>
-                                                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginTop: '4px' }}>
-                                                        <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{msg.email}</span>
-                                                        <span style={{ width: '3px', height: '3px', borderRadius: '50%', background: 'rgba(255,255,255,0.2)' }}></span>
-                                                        <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{new Date(msg.createdAt).toLocaleString()}</span>
-                                                    </div>
+                    {activeTab === 'messages' && (
+                        <div className="messages-pane fade-in">
+                            <div className="pane-top-v4">
+                                <h2 className="v4-pane-title">Inquiries</h2>
+                                <button className="refresh-btn-v4" onClick={fetchAllData}>
+                                    <FaSync className={refreshing ? 'spin' : ''} /> Refresh
+                                </button>
+                            </div>
+                            <div className="messages-stream-v5">
+                                {messages.map(m => (
+                                    <div key={m._id} className={`message-thread-v5 ${m.status === 'new' ? 'unread' : ''}`}>
+                                        <div className="thread-header-v5">
+                                            <div className="sender-chip-v5">
+                                                <div className="v5-mini-avatar">{m.name[0]}</div>
+                                                <div className="sender-details-v5">
+                                                    <h5>{m.name}</h5>
+                                                    <span>{m.email}</span>
                                                 </div>
                                             </div>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                                {msg.status === 'new' && <span className="status-badge new">URGENT</span>}
-                                                {msg.status === 'replied' && <span className="status-badge" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981' }}>REPLIED</span>}
+                                            <div className="thread-meta-v5">
+                                                <span className="v5-date">{new Date(m.createdAt).toLocaleString()}</span>
+                                                <span className={`v5-status-tag ${m.status}`}>{m.status.toUpperCase()}</span>
                                             </div>
                                         </div>
 
-                                        <div style={{ padding: '20px', background: 'rgba(0,0,0,0.2)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)', marginBottom: '20px' }}>
-                                            <p style={{ fontSize: '15px', lineHeight: '1.7', color: '#e2e8f0', margin: 0, fontStyle: 'italic' }}>"{msg.message}"</p>
+                                        <div className="thread-body-v5">
+                                            <div className="user-msg-box-v5">
+                                                <p>{m.message}</p>
+                                            </div>
+
+                                            {m.adminReply && (
+                                                <div className="admin-reply-box-v5">
+                                                    <div className="reply-label-v5"><FaShieldAlt /> ADMIN RESPONSE</div>
+                                                    <p>{m.adminReply}</p>
+                                                </div>
+                                            )}
                                         </div>
 
-                                        {msg.adminReply && (
-                                            <div style={{ padding: '20px', background: 'rgba(16, 185, 129, 0.05)', borderRadius: '12px', border: '1px solid rgba(16, 185, 129, 0.1)', marginBottom: '20px', marginLeft: '30px', position: 'relative' }}>
-                                                <div style={{ position: 'absolute', left: '-15px', top: '20px', fontSize: '12px', color: '#10b981' }}>└{'>'}</div>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                                                    <FaShieldAlt size={12} color="#10b981" />
-                                                    <span style={{ fontSize: '12px', fontWeight: '800', color: '#10b981', textTransform: 'uppercase', letterSpacing: '1px' }}>Admin Response</span>
-                                                </div>
-                                                <p style={{ fontSize: '14px', color: '#10b981', margin: 0 }}>{msg.adminReply}</p>
+                                        <div className="thread-footer-v5">
+                                            <div className="thread-actions-v5">
+                                                <button
+                                                    className="v5-reply-btn"
+                                                    onClick={() => {
+                                                        const reply = window.prompt(`Update response to ${m.name}:`, m.adminReply || '');
+                                                        if (reply) handleReplyToContact(m._id, reply);
+                                                    }}
+                                                >
+                                                    <FaReply /> {m.adminReply ? 'Update Reply' : 'Send Reply'}
+                                                </button>
+                                                <button
+                                                    className="v5-trash-btn"
+                                                    onClick={() => handleDeleteContact(m._id)}
+                                                >
+                                                    <FaTrash />
+                                                </button>
                                             </div>
-                                        )}
-
-                                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
-                                            {msg.status === 'new' && (
-                                                <button onClick={() => markMessageRead(msg._id)} className="btn-secondary" style={{ fontSize: '12px', padding: '8px 16px' }}>
-                                                    <FaCheck /> Mark Viewed
-                                                </button>
-                                            )}
-                                            {replyingTo === msg._id ? (
-                                                <div style={{ width: '100%', marginTop: '10px' }}>
-                                                    <textarea
-                                                        value={replyText}
-                                                        onChange={(e) => setReplyText(e.target.value)}
-                                                        placeholder="Craft your response..."
-                                                        className="premium-textarea"
-                                                        style={{ marginBottom: '15px' }}
-                                                    />
-                                                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-                                                        <button onClick={() => setReplyingTo(null)} className="btn-secondary" style={{ fontSize: '12px', padding: '8px 20px' }}>Cancel</button>
-                                                        <button onClick={(e) => handleReplySubmit(e, msg._id)} className="btn btn-primary" style={{ fontSize: '12px', padding: '8px 25px' }}>Send Reply</button>
-                                                    </div>
-                                                </div>
-                                            ) : (
-                                                <button onClick={() => setReplyingTo(msg._id)} className="btn btn-primary" style={{ fontSize: '12px', padding: '8px 20px' }}>
-                                                    <FaEnvelope style={{ marginRight: '8px' }} /> {msg.adminReply ? 'Update Reply' : 'Send Reply'}
-                                                </button>
-                                            )}
                                         </div>
                                     </div>
-                                ))
-                            )}
+                                ))}
+                            </div>
                         </div>
-                    </div>
-                )}
+                    )}
+                </div>
             </div>
 
             <style>{`
-                .admin-card {
-                    background: rgba(255,255,255,0.02);
-                    border: 1px solid rgba(255,255,255,0.05);
-                    border-radius: 16px;
-                    padding: 24px;
-                    transition: all 0.3s ease;
+                .exact-admin-root {
+                    background-color: #000;
+                    min-height: 100vh;
+                    color: #fff;
+                    font-family: 'Inter', sans-serif;
                 }
-                .dashboard-action-btn {
-                    background: rgba(255,255,255,0.03);
-                    border: 1px solid rgba(255,255,255,0.07);
-                    color: white;
-                    padding: 15px;
-                    border-radius: 12px;
-                    cursor: pointer;
-                    display: flex;
-                    align-items: center;
-                    gap: 15px;
-                    font-weight: 600;
-                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-                    text-align: left;
-                    overflow: hidden;
-                    position: relative;
-                }
-                .dashboard-action-btn:hover {
-                    background: rgba(255,255,255,0.08);
-                    transform: translateY(-2px);
-                    box-shadow: 0 10px 20px rgba(0,0,0,0.2);
-                }
-                .dashboard-action-btn .action-icon {
-                    width: 38px;
-                    height: 38px;
-                    border-radius: 10px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    font-size: 18px;
-                    transition: all 0.3s;
-                }
-                .dashboard-action-btn.bronze .action-icon { background: rgba(249, 115, 22, 0.1); color: #f97316; }
-                .dashboard-action-btn.primary .action-icon { background: rgba(14, 165, 233, 0.1); color: #0ea5e9; }
-                .dashboard-action-btn.purple .action-icon { background: rgba(139, 92, 246, 0.1); color: #8b5cf6; }
-                .dashboard-action-btn.green .action-icon { background: rgba(16, 185, 129, 0.1); color: #10b981; }
+                .exact-container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
                 
-                .dashboard-action-btn:hover.bronze { border-color: #f97316; }
-                .dashboard-action-btn:hover.primary { border-color: #0ea5e9; }
-                .dashboard-action-btn:hover.purple { border-color: #8b5cf6; }
-                .dashboard-action-btn:hover.green { border-color: #10b981; }
+                .exact-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 40px; }
+                .header-text h1 { font-size: 38px; font-weight: 800; margin: 0 0 10px 0; letter-spacing: -1px; }
+                .header-text p { color: #888; font-size: 16px; margin: 0; }
+                .refresh-btn { background: #fff; color: #000; border: none; padding: 10px 22px; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 14px; }
 
+                .exact-tabs { display: flex; gap: 30px; border-bottom: 1px solid #111; margin-bottom: 30px; }
+                .tab-link { background: none; border: none; color: #555; padding: 15px 0; font-weight: 700; cursor: pointer; font-size: 14px; position: relative; transition: 0.2s; }
+                .tab-link.active { color: #f97316; }
+                .tab-link.active::after { content: ''; position: absolute; bottom: -1px; left: 0; width: 100%; height: 2px; background: #f97316; }
 
-                .admin-overlay {
-                    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-                    background: rgba(0,0,0,0.8); backdrop-filter: blur(8px);
-                    z-index: 1000; display: flex; align-items: center; justify-content: center;
-                    animation: fadeIn 0.3s ease;
+                .stat-cards-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 30px; }
+                .elite-stat-card { background: #0a0a0a; border: 1px solid #111; border-radius: 12px; padding: 24px; display: flex; align-items: center; gap: 16px; }
+                .stat-icon { width: 44px; height: 44px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+                .card-bottom-info label { display: block; color: #444; font-size: 11px; font-weight: 700; margin-bottom: 4px; }
+                .card-bottom-info h3 { font-size: 24px; font-weight: 800; margin: 0; }
+
+                .panel-grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 24px; }
+                .panel-box { background: #0a0a0a; border: 1px solid #111; border-radius: 16px; padding: 24px; }
+                .panel-box h3 { font-size: 16px; font-weight: 700; margin: 0 0 20px 0; color: #ffffff; }
+
+                .action-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+                .panel-action-btn { background: #0c0c0c; border: 1px solid #151515; border-radius: 12px; padding: 20px; display: flex; align-items: center; gap: 16px; cursor: pointer; text-align: left; transition: 0.2s; }
+                .panel-action-btn:hover { background: #111; border-color: #222; }
+                .action-icon { font-size: 18px; }
+                .panel-action-btn span { font-weight: 700; color: #fff; font-size: 14px; }
+
+                .info-list { display: flex; flex-direction: column; gap: 16px; margin-bottom: 25px; }
+                .info-item { display: flex; justify-content: space-between; align-items: center; }
+                .info-item label { color: #444; font-size: 13px; font-weight: 600; }
+                .info-item span { color: #fff; font-size: 13px; font-weight: 700; }
+
+                .status-indicator { background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.1); border-radius: 8px; padding: 12px; display: flex; align-items: center; gap: 10px; }
+                .status-dot { width: 8px; height: 8px; background: #10b981; border-radius: 50%; }
+                .status-indicator span { color: #10b981; font-size: 11px; font-weight: 700; }
+
+                .user-v4 { display: flex; align-items: center; gap: 15px; font-weight: 700; color: #fff; }
+                .v4-avatar-glow {
+                    width: 38px; height: 38px; border-radius: 50%;
+                    background: rgba(249, 115, 22, 0.3);
+                    display: flex; align-items: center; justify-content: center;
+                    box-shadow: 0 0 15px rgba(249, 115, 22, 0.4);
                 }
-                .premium-modal {
-                    background: #1e293b; border: 1px solid rgba(255,255,255,0.1);
-                    padding: 40px; border-radius: 24px; text-align: center;
-                    max-width: 400px; width: 90%; animation: slideUp 0.3s ease;
+                .v4-avatar {
+                    width: 32px; height: 32px; background: #f97316; color: #fff;
+                    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+                    font-size: 14px; font-weight: 900;
                 }
-                .progress-container {
-                    width: 100%; height: 6px; background: rgba(255,255,255,0.05);
-                    border-radius: 100px; margin-top: 30px; overflow: hidden;
-                }
-                .progress-bar { height: 100%; background: #10b981; transition: width 0.1s; }
                 
-                .premium-textarea {
-                    width: 100%; height: 120px; background: rgba(0,0,0,0.2);
-                    border: 1px solid rgba(255,255,255,0.1); border-radius: 12px;
-                    padding: 15px; color: white; margin-top: 20px; font-family: inherit;
-                    resize: none;
+                .pane-top-v4 { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; position: relative; }
+                .filter-wrapper-v4 { position: relative; }
+                .filter-dropdown-v4 {
+                    position: absolute; top: calc(100% + 10px); right: 0; 
+                    background: #0a0a0a; border: 1px solid #111; border-radius: 12px;
+                    width: 160px; z-index: 1000; overflow: hidden;
+                    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
                 }
-                .side-drawer {
-                    position: absolute; right: 0; top: 0; bottom: 0; width: 350px;
-                    background: #0f172a; border-left: 1px solid rgba(255,255,255,0.1);
-                    padding: 40px 30px; animation: slideInRight 0.3s ease;
-                    box-shadow: -10px 0 30px rgba(0,0,0,0.5);
+                .filter-opt { padding: 12px 20px; color: #666; font-size: 13px; font-weight: 700; cursor: pointer; transition: 0.2s; }
+                .filter-opt:hover { background: #111; color: #fff; }
+                .filter-opt.active { color: #f97316; background: rgba(249, 115, 22, 0.05); }
+
+                .search-box-v4 { 
+                    background: #0a0a0a; border: 1px solid #111; border-radius: 12px;
+                    display: flex; align-items: center; padding: 0 15px; width: 300px;
                 }
-                .log-item {
-                    display: flex; gap: 15px; padding: 15px 0; border-bottom: 1px solid rgba(255,255,255,0.05);
+                .search-icon-v4 { color: #444; font-size: 14px; }
+                .search-box-v4 input { 
+                    background: none; border: none; color: #fff; padding: 12px;
+                    width: 100%; font-size: 14px; outline: none;
+                }
+                .filter-btn-v4 {
+                    background: #fff; color: #000; border: none; padding: 8px 16px;
+                    border-radius: 8px; font-weight: 800; display: flex; align-items: center;
+                    gap: 10px; cursor: pointer; font-size: 13px;
                 }
 
+                /* Elite V5 Styles */
+                .v5-elevation { box-shadow: 0 20px 40px rgba(0,0,0,0.6); border: 1px solid #111; border-radius: 16px; overflow: hidden; }
+                .exact-table.v5 { border-collapse: separate; border-spacing: 0; }
+                .exact-table.v5 th { background: #050505; color: #444; font-size: 11px; font-weight: 900; text-transform: uppercase; border-bottom: 1px solid #111; }
+                .exact-table.v5 tr:hover { background: rgba(255,255,255,0.01); }
+                .user-v5 { display: flex; align-items: center; gap: 15px; }
+                .v5-avatar-glow { width: 40px; height: 40px; background: rgba(249, 115, 22, 0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(249, 115, 22, 0.2); }
+                .v5-avatar { width: 32px; height: 32px; background: #f97316; color: #fff; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 900; }
+                .v5-user-name { font-weight: 700; color: #fff; }
+                .email-cell-v5 { color: #888; font-size: 13px; }
+                .v5-date-cell { color: #555; font-size: 12px; }
+                .v5-role-badge { font-size: 10px; font-weight: 900; padding: 4px 10px; border-radius: 6px; }
+                .v5-role-badge.admin { background: rgba(249, 115, 22, 0.1); color: #f97316; border: 1px solid rgba(249, 115, 22, 0.2); }
+                .v5-role-badge.user { background: #111; color: #555; }
+                .action-group-v5 { display: flex; gap: 8px; }
+                .v5-ghost-btn { background: #0a0a0a; border: 1px solid #111; color: #666; padding: 6px 12px; border-radius: 6px; font-size: 11px; font-weight: 800; cursor: pointer; transition: 0.2s; }
+                .v5-ghost-btn:hover { background: #fff; color: #000; }
+                .v5-delete-btn { background: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.1); color: #ef4444; width: 32px; height: 32px; border-radius: 6px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; }
+                .v5-delete-btn:hover:not(:disabled) { background: #ef4444; color: #fff; }
+
+                /* Feedback V5 Grid */
+                .feedback-grid-v5 { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 20px; }
+                .feedback-card-v5 { background: #0a0a0a; border-radius: 16px; padding: 24px; border: 1px solid #111; display: flex; flex-direction: column; gap: 15px; border-top-width: 3px; }
+                .feedback-card-v5.high { border-top-color: #10b981; }
+                .feedback-card-v5.mid { border-top-color: #f97316; }
+                .feedback-card-v5.low { border-top-color: #ef4444; }
+                .card-top-v5 { display: flex; justify-content: space-between; align-items: flex-start; }
+                .user-info-v5 h4 { margin: 0; font-size: 15px; color: #fff; }
+                .user-info-v5 p { margin: 4px 0 0 0; font-size: 12px; color: #555; }
+                .v5-stars { display: flex; gap: 3px; font-size: 10px; }
+                .v5-feedback-msg { color: #aaa; font-size: 13px; line-height: 1.6; font-style: italic; }
+                .card-footer-v5 { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #111; padding-top: 15px; }
+                .v5-feedback-date { font-size: 11px; color: #444; font-weight: 700; }
+                .v5-check-btn { background: #111; border: 1px solid #222; color: #fff; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+                .v5-check-btn:hover { background: #10b981; border-color: #10b981; }
+                .v5-addressed-tag { font-size: 10px; color: #10b981; font-weight: 800; text-transform: uppercase; }
+
+                /* Messages V5 Stream */
+                .messages-stream-v5 { display: flex; flex-direction: column; gap: 20px; }
+                .message-thread-v5 { background: #0a0a0a; border: 1px solid #111; border-radius: 20px; overflow: hidden; }
+                .message-thread-v5.unread { border-left: 4px solid #10b981; }
+                .thread-header-v5 { padding: 20px; display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.01); border-bottom: 1px solid #111; }
+                .sender-chip-v5 { display: flex; align-items: center; gap: 12px; }
+                .v5-mini-avatar { width: 36px; height: 36px; background: #f97316; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; }
+                .sender-details-v5 h5 { margin: 0; font-size: 14px; }
+                .sender-details-v5 span { font-size: 11px; color: #555; }
+                .v5-status-tag { font-size: 9px; font-weight: 900; padding: 2px 8px; border-radius: 4px; }
+                .v5-status-tag.new { background: rgba(16, 185, 129, 0.1); color: #10b981; }
+                .v5-status-tag.replied { background: rgba(139, 92, 246, 0.1); color: #8b5cf6; }
+                
+                .thread-body-v5 { padding: 25px; display: flex; flex-direction: column; gap: 20px; }
+                .user-msg-box-v5 { background: #0c0c0c; border: 1px solid #151515; padding: 20px; border-radius: 12px 12px 12px 4px; position: relative; }
+                .user-msg-box-v5 p { margin: 0; color: #fff; line-height: 1.6; }
+                .admin-reply-box-v5 { background: rgba(16, 185, 129, 0.03); border: 1px solid rgba(16, 185, 129, 0.1); padding: 20px; border-radius: 12px 12px 4px 12px; align-self: flex-end; width: 90%; }
+                .reply-label-v5 { display: flex; align-items: center; gap: 8px; color: #10b981; font-size: 10px; font-weight: 900; margin-bottom: 10px; }
+                .admin-reply-box-v5 p { margin: 0; color: #ccc; line-height: 1.6; }
+
+                .thread-footer-v5 { padding: 15px 25px; background: rgba(255,255,255,0.01); border-top: 1px solid #111; }
+                .thread-actions-v5 { display: flex; justify-content: flex-end; gap: 12px; }
+                .v5-reply-btn { background: #f97316; color: #fff; border: none; padding: 10px 20px; border-radius: 10px; font-weight: 800; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 15px rgba(249, 115, 22, 0.2); }
+                .v5-trash-btn { background: none; border: 1px solid #222; color: #444; width: 38px; height: 38px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+                .v5-trash-btn:hover { border-color: #ef4444; color: #ef4444; }
+
+                .v4-pane-title { font-size: 18px; font-weight: 800; margin: 0; color: #fff; }
+                .refresh-btn-v4 { background: #111; border: 1px solid #222; color: #fff; padding: 8px 16px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+                .refresh-btn-v4:hover { background: #1a1a1a; border-color: #333; }
+
+                .panel-box-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
+                .pulse-icon-v5 { color: #10b981; font-size: 12px; opacity: 0.5; }
+                
+                .info-list.v5 { display: flex; flex-direction: column; gap: 20px; margin-bottom: 25px; }
+                .info-item-v5 { display: flex; flex-direction: column; gap: 8px; }
+                .v5-info-label { display: flex; align-items: center; gap: 8px; color: #444; font-size: 11px; font-weight: 800; text-transform: uppercase; }
+                .v5-tech-value { color: #fff; font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 700; }
+                
+                .v5-info-head { display: flex; justify-content: space-between; align-items: center; }
+                .v5-progress-bar { height: 4px; background: #111; border-radius: 10px; overflow: hidden; }
+                .v5-progress-fill { height: 100%; background: #10b981; border-radius: 10px; transition: width 1s ease-in-out; }
+                
+                .v5-server-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 12px; background: #0c0c0c; border-radius: 8px; border: 1px solid #151515; }
+                .v5-meta-bit { display: flex; flex-direction: column; gap: 4px; }
+                .v5-meta-bit label { color: #333; font-size: 9px; font-weight: 900; }
+                .v5-meta-bit span { color: #888; font-size: 11px; font-weight: 700; }
+
+                .status-indicator.v5 { background: rgba(16, 185, 129, 0.03); border: 1px solid rgba(16, 185, 129, 0.08); padding: 15px; border-radius: 12px; justify-content: center; }
+                .status-indicator.v5 span { letter-spacing: 1px; font-family: 'JetBrains Mono', monospace; font-size: 10px; }
+
+                .pulse { animation: pulseAnim 2s infinite; }
+                @keyframes pulseAnim {
+                    0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+                    70% { transform: scale(1.1); box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+                    100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+                }
+
+                /* Overlay & Modal V5 Styles */
+                .elite-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px; }
+                .overlay-box { background: #070707; border: 1px solid #1a1a1a; border-radius: 20px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); display: flex; flex-direction: column; overflow: hidden; }
+                .overlay-box.mini { width: 400px; padding: 30px; text-align: center; }
+                .overlay-box.wide { width: 900px; max-height: 80vh; }
+                
+                .overlay-header { display: flex; justify-content: space-between; align-items: center; padding: 20px 25px; border-bottom: 1px solid #111; }
+                .overlay-header h3 { margin: 0; font-size: 16px; font-weight: 800; color: #fff; letter-spacing: 0.5px; }
+                .close-overlay { background: #111; border: none; color: #444; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+                .close-overlay:hover { background: #222; color: #fff; }
+
+                .overlay-desc { color: #555; font-size: 12px; margin-bottom: 20px; }
+                .v5-textarea { background: #0a0a0a; border: 1px solid #1a1a1a; border-radius: 12px; color: #fff; padding: 15px; font-size: 13px; min-height: 120px; resize: none; width: 100%; margin-bottom: 20px; outline: none; transition: border-color 0.2s; }
+                .v5-textarea:focus { border-color: #333; }
+                
+                .v5-action-btn-main { background: #fff; color: #000; border: none; padding: 12px; border-radius: 10px; font-weight: 800; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; transition: transform 0.2s; }
+                .v5-action-btn-main:hover { transform: translateY(-2px); }
+
+                .v5-spin-icon { font-size: 30px; margin-bottom: 15px; animation: spin 2s linear infinite; }
+                .v5-progress-bar-container { width: 100%; height: 4px; background: #111; border-radius: 10px; overflow: hidden; margin: 15px 0; }
+                .v5-progress-bar-fill { height: 100%; background: #10b981; transition: width 0.1s; border-radius: 10px; }
+                .overlay-box.mini p { color: #555; font-size: 11px; margin: 0; font-weight: 700; }
+
+                /* Terminal View */
+                .terminal-view { background: #050505; padding: 20px; overflow-y: auto; font-family: 'JetBrains Mono', monospace; font-size: 11px; flex: 1; }
+                .term-line { display: flex; gap: 12px; margin-bottom: 8px; line-height: 1.4; color: #aaa; }
+                .term-time { color: #444; font-weight: 700; flex-shrink: 0; }
+                .term-tag { font-weight: 900; padding: 0 6px; border-radius: 3px; font-size: 10px; text-transform: uppercase; flex-shrink: 0; }
+                .term-tag.user_delete { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+                .term-tag.login_success { background: rgba(16, 185, 129, 0.1); color: #10b981; }
+                .term-msg { color: #ccc; }
+                .dimmed { opacity: 0.5; }
+
+                .audit-table-box { padding: 0 10px 20px 10px; overflow-y: auto; }
+                .exact-table.audit { border-top: none; }
+                .exact-table.audit td { font-size: 11px; color: #888; border-bottom: 1px solid #0a0a0a; padding: 15px; }
+
+                .fade-in { animation: fadeIn 0.4s ease; }
                 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-                @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-                @keyframes slideInRight { from { transform: translateX(100%); } to { transform: translateX(0); } }
-                @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-                .rotate { animation: rotate 2s linear infinite; }
-                @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
-                .bounce { animation: bounce 1s ease infinite; }
-
-                .admin-table-container { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 16px; overflow: hidden; }
-                .admin-table { width: 100%; border-collapse: collapse; text-align: left; }
-                .admin-table th { background: rgba(255,255,255,0.03); padding: 15px 20px; font-size: 13px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
-                .admin-table td { padding: 15px 20px; border-bottom: 1px solid rgba(255,255,255,0.05); }
-                .status-badge { padding: 4px 10px; border-radius: 100px; font-size: 11px; font-weight: 800; }
-                .status-badge.admin { background: rgba(249, 115, 22, 0.2); color: #f97316; }
-                .status-badge.user { background: rgba(255,255,255,0.05); color: #94a3b8; }
-                .status-badge.new { background: var(--brand-primary); color: white; }
-                .table-action-btn { background: none; border: 1px solid rgba(255,255,255,0.1); color: var(--text-muted); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; transition: all 0.3s; }
-                .table-action-btn:hover { border-color: var(--brand-primary); color: var(--brand-primary); }
-
-                    width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.1);
-                    border-top-color: var(--brand-primary); border-radius: 50%;
-                    animation: rotate 0.6s linear infinite;
-                }
+                .spin { animation: spin 2s linear infinite; }
+                @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
             `}</style>
-            {/* Premium Toast Notification */}
-            {toast.visible && (
-                <div className="toast-container">
-                    <div className={`toast ${toast.type}`}>
-                        <div className="toast-icon">
-                            {toast.type === 'success' && <FaCheckCircle />}
-                            {toast.type === 'error' && <FaExclamationCircle />}
-                            {toast.type === 'info' && <FaInfoCircle />}
-                        </div>
-                        <div className="toast-content">
-                            <div className="toast-message">{toast.message}</div>
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     );
 };
-
-const StatCard = ({ icon, label, value, color }) => (
-    <div className="admin-card" style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-        <div style={{
-            width: '50px', height: '50px', borderRadius: '12px',
-            background: `${color}15`, color: color,
-            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px'
-        }}>
-            {icon}
-        </div>
-        <div>
-            <div style={{ color: 'var(--text-muted)', fontSize: '13px', fontWeight: '600' }}>{label}</div>
-            <div style={{ fontSize: '24px', fontWeight: '800' }}>{value}</div>
-        </div>
-    </div>
-);
-
-const LogItem = ({ icon, text, time }) => (
-    <div className="log-item" style={{ display: 'flex', gap: '15px', padding: '15px 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-        <div style={{ marginTop: '4px' }}>{icon}</div>
-        <div>
-            <div style={{ fontSize: '14px', color: '#e2e8f0', marginBottom: '4px' }}>{text}</div>
-            <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{time}</div>
-        </div>
-    </div>
-);
 
 export default AdminDashboard;

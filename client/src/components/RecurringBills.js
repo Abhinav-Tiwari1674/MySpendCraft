@@ -96,7 +96,7 @@ const RecurringBills = () => {
                         required
                         style={{ height: '48px', fontSize: '14px', padding: '0 15px' }}
                     />
-                    <div style={{ display: 'flex', gap: '12px', width: '100%' }}>
+                    <div className="recurring-bill-form-row">
                         <input
                             type="number"
                             placeholder="Amount"
@@ -105,7 +105,7 @@ const RecurringBills = () => {
                             onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
                             onWheel={(e) => e.target.blur()}
                             required
-                            style={{ height: '48px', fontSize: '14px', flex: 1, minWidth: 0, padding: '0 15px' }}
+                            style={{ height: '48px', fontSize: '14px', padding: '0 15px' }}
                         />
                         <select
                             className="form-control"
@@ -114,8 +114,6 @@ const RecurringBills = () => {
                             style={{
                                 height: '48px',
                                 fontSize: '14px',
-                                flex: 1.2,
-                                minWidth: 0,
                                 padding: '0 15px',
                                 cursor: 'pointer',
                                 background: 'rgba(2, 6, 23, 0.8)'

@@ -1,6 +1,7 @@
 const asyncHandler = require('express-async-handler');
 const Contact = require('../models/Contact');
 const User = require('../models/User');
+const ActivityLog = require('../models/ActivityLog');
 
 // @desc    Submit a contact message
 // @route   POST /api/contact
@@ -60,6 +61,15 @@ const replyToContact = asyncHandler(async (req, res) => {
     contact.status = 'replied';
 
     await contact.save();
+
+    // Log the reply action
+    await ActivityLog.create({
+        action: 'BROADCAST_SENT', // Using BROADCAST_SENT or adding new enum if needed
+        message: `Admin ${req.user.name} replied to message from ${contact.name}`,
+        performedBy: req.user._id,
+        metadata: { contactId: contact._id.toString(), targetUserName: contact.name }
+    });
+
     res.status(200).json(contact);
 });
 
@@ -104,6 +114,30 @@ const markMessagesAsRead = asyncHandler(async (req, res) => {
     res.status(200).json({ message: 'Messages marked as read' });
 });
 
+// @desc    Delete a contact message (Admin only)
+// @route   DELETE /api/contact/:id
+// @access  Private/Admin
+const deleteContact = asyncHandler(async (req, res) => {
+    const contact = await Contact.findById(req.params.id);
+
+    if (!contact) {
+        res.status(404);
+        throw new Error('Message not found');
+    }
+
+    await contact.deleteOne();
+
+    // Log the deletion
+    await ActivityLog.create({
+        action: 'USER_DELETE', // Reusing OR add MESSAGE_DELETE
+        message: `Admin ${req.user.name} deleted message from ${contact.name}`,
+        performedBy: req.user._id,
+        metadata: { contactId: contact._id.toString() }
+    });
+
+    res.status(200).json({ message: 'Message removed' });
+});
+
 module.exports = {
     createContact,
     getContacts,
@@ -111,5 +145,6 @@ module.exports = {
     replyToContact,
     updateContactStatus,
     getUnreadReplyCount,
-    markMessagesAsRead
+    markMessagesAsRead,
+    deleteContact
 };

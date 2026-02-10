@@ -4,6 +4,7 @@ const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 const asyncHandler = require('express-async-handler');
 const User = require('../models/User');
+const ActivityLog = require('../models/ActivityLog');
 const dns = require('dns').promises;
 
 const validateEmailDomain = async (email) => {
@@ -54,6 +55,13 @@ const registerUser = asyncHandler(async (req, res) => {
     });
 
     if (user) {
+        // Log the registration
+        await ActivityLog.create({
+            action: 'USER_REGISTER',
+            message: `New craftsman registered: ${user.name} (${user.email})`,
+            metadata: { userId: user._id.toString() }
+        });
+
         res.status(201).json({
             _id: user.id,
             name: user.name,

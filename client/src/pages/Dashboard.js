@@ -433,32 +433,29 @@ const Dashboard = () => {
                 )}
 
                 {announcement && (
-                    <div className="update-banner glass-effect slide-down" style={{
-                        marginBottom: '30px',
-                        padding: '15px 25px',
-                        background: announcement.type === 'warning' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(249, 115, 22, 0.1)',
-                        borderLeft: `4px solid ${announcement.type === 'warning' ? '#ef4444' : 'var(--primary)'}`,
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        borderRadius: '16px'
-                    }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                            <div style={{ color: announcement.type === 'warning' ? '#ef4444' : 'var(--primary)', fontSize: '24px' }}>
-                                {announcement.type === 'warning' ? <FaExclamationTriangle /> : <FaRobot />}
+                    <div className="elite-broadcast-overlay">
+                        <div className="broadcast-box slide-up glass-effect">
+                            <div className="broadcast-accent" style={{ background: announcement.type === 'warning' ? '#ef4444' : '#f97316' }} />
+                            <div className="broadcast-header">
+                                <div className="broadcast-icon-box" style={{ background: announcement.type === 'warning' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(249, 115, 22, 0.1)', color: announcement.type === 'warning' ? '#ef4444' : '#f97316' }}>
+                                    {announcement.type === 'warning' ? <FaExclamationTriangle /> : <FaInfoCircle />}
+                                </div>
+                                <div className="broadcast-title">
+                                    <h3>SYSTEM BULLETIN</h3>
+                                    <span>#{announcement._id.slice(-6).toUpperCase()}</span>
+                                </div>
                             </div>
-                            <div>
-                                <div style={{ fontWeight: '800', fontSize: '15px' }}>System Announcement</div>
-                                <div style={{ fontSize: '12px', opacity: 0.8 }}>{announcement.message}</div>
+                            <div className="broadcast-body">
+                                <p>{announcement.message}</p>
                             </div>
-                        </div>
-                        <div style={{ display: 'flex', gap: '10px' }}>
-                            <button onClick={handleVersionRefresh} className="btn-glow-primary" style={{ padding: '10px 20px', fontSize: '13px' }}>
-                                <FaSyncAlt /> Refresh Now
-                            </button>
-                            <button onClick={handleDismissAnnouncement} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer' }}>
-                                <FaTimes size={14} />
-                            </button>
+                            <div className="broadcast-footer">
+                                <button className="acknowledge-btn" onClick={handleDismissAnnouncement}>
+                                    Got it, thanks!
+                                </button>
+                                <button className="refresh-bulletin-btn" onClick={handleVersionRefresh}>
+                                    <FaSyncAlt /> Update App
+                                </button>
+                            </div>
                         </div>
                     </div>
                 )}
@@ -537,7 +534,7 @@ const Dashboard = () => {
                                 </div>
                             </div>
 
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '24px' }}>
+                            <div className="wallet-cards-grid">
                                 {[
                                     { name: 'Cash', icon: <FaMoneyBillWave />, gradient: 'linear-gradient(135deg, #10b981 0%, #059669 100%)' },
                                     { name: 'Bank', icon: <FaUniversity />, gradient: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)' },
@@ -583,7 +580,7 @@ const Dashboard = () => {
                                 ))}
                             </div>
 
-                            <div className="tab-content-grid" style={{ display: 'grid', gridTemplateColumns: '360px 1fr', gap: '24px', alignItems: 'start' }}>
+                            <div className="tab-content-grid">
                                 <ExpenseForm
                                     onAddExpense={addExpense}
                                     expenseToEdit={expenseToEdit}
@@ -610,7 +607,7 @@ const Dashboard = () => {
                     )}
 
                     {activeTab === 'expenses' && (
-                        <div className="tab-container" style={{ display: 'grid', gridTemplateColumns: '360px 1fr', gap: '24px', alignItems: 'start' }}>
+                        <div className="tab-content-grid">
                             <ExpenseForm
                                 onAddExpense={addExpense}
                                 expenseToEdit={expenseToEdit}
@@ -796,6 +793,60 @@ const Dashboard = () => {
                     </button>
                 </div>
             </main>
+
+            <style>{`
+                .elite-broadcast-overlay {
+                    position: fixed;
+                    inset: 0;
+                    background: rgba(0,0,0,0.8);
+                    backdrop-filter: blur(10px);
+                    z-index: 20000;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 20px;
+                    animation: fadeIn 0.3s ease;
+                }
+                .broadcast-box {
+                    width: 100%;
+                    max-width: 450px;
+                    background: #080808;
+                    border: 1px solid #1a1a1a;
+                    border-radius: 24px;
+                    overflow: hidden;
+                    position: relative;
+                    box-shadow: 0 30px 60px -12px rgba(0,0,0,0.5), 0 0 20px rgba(0,0,0,0.3);
+                }
+                .broadcast-accent { height: 4px; width: 100%; }
+                .broadcast-header { padding: 30px 30px 20px; display: flex; align-items: center; gap: 20px; }
+                .broadcast-icon-box {
+                    width: 50px; height: 50px; border-radius: 12px;
+                    display: flex; align-items: center; justify-content: center;
+                    font-size: 24px;
+                }
+                .broadcast-title h3 { margin: 0; font-size: 11px; font-weight: 900; letter-spacing: 2px; color: #555; }
+                .broadcast-title span { font-size: 14px; font-weight: 800; color: #fff; }
+                
+                .broadcast-body { padding: 0 30px 30px; }
+                .broadcast-body p { margin: 0; color: #aaa; line-height: 1.6; font-size: 15px; }
+                
+                .broadcast-footer { padding: 20px 30px 30px; display: flex; flex-direction: column; gap: 12px; }
+                .acknowledge-btn {
+                    background: #fff; color: #000; border: none; padding: 14px;
+                    border-radius: 12px; font-weight: 800; font-size: 14px;
+                    cursor: pointer; transition: 0.2s;
+                }
+                .acknowledge-btn:hover { transform: scale(1.02); }
+                .refresh-bulletin-btn {
+                    background: rgba(255,255,255,0.03); color: #444; border: 1px solid #151515;
+                    padding: 12px; border-radius: 12px; font-weight: 700; font-size: 12px;
+                    cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
+                }
+                .refresh-bulletin-btn:hover { background: #111; color: #fff; }
+
+                @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+                @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+            `}</style>
         </div>
     );
 };

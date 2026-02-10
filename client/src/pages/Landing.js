@@ -166,7 +166,7 @@ const Landing = () => {
       {/* Hero Section */}
       <section className="landing-section" style={{ minHeight: '85vh', display: 'flex', alignItems: 'center', padding: '80px 8%', position: 'relative' }}>
         <div className="landing-hero-glow"></div>
-        <div className="container" style={{ display: 'grid', gridTemplateColumns: '1.3fr 0.7fr', gap: '60px', alignItems: 'center', position: 'relative', zIndex: 1, padding: 0 }}>
+        <div className="container landing-hero-container">
           <div>
 
 
@@ -213,7 +213,7 @@ const Landing = () => {
               The smart expense tracker that helps you understand your spending habits, set budgets, and save more money effortlessly.
             </p>
 
-            <div style={{ display: 'flex', gap: '16px', marginBottom: '60px' }}>
+            <div className="landing-hero-buttons">
               <Link to="/register" className="btn btn-primary">
                 <span style={{ fontWeight: '700', fontSize: '15px' }}>Start Tracking Free</span>
                 <FaArrowRight fontSize={14} />

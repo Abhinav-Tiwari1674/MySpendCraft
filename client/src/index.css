@@ -3468,8 +3468,16 @@ tr:hover td {
 
 .tab-content-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+  grid-template-columns: 360px 1fr;
   gap: 24px;
+  align-items: start;
+}
+
+@media (max-width: 1024px) {
+  .tab-content-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
 }
 
 @media (max-width: 1024px) {
@@ -3516,5 +3524,549 @@ tr:hover td {
 
   .dash-main-content {
     padding-bottom: 100px;
+  }
+}
+
+/* Wallet Selector in ExpenseForm */
+.wallet-selector-grid {
+  display: flex;
+  gap: 10px;
+}
+
+@media (max-width: 480px) {
+  .wallet-selector-grid {
+    gap: 8px;
+  }
+
+  .wallet-selector-grid>div {
+    padding: 10px 8px !important;
+  }
+
+  .wallet-selector-grid span {
+    font-size: 9px !important;
+  }
+}
+
+/* Capture Buttons */
+.capture-buttons-row {
+  display: flex;
+  gap: 10px;
+}
+
+@media (max-width: 480px) {
+  .capture-buttons-row {
+    flex-direction: column;
+    gap: 8px;
+  }
+}
+
+/* Recurring Bills Form Row */
+.recurring-bill-form-row {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+}
+
+@media (max-width: 768px) {
+  .recurring-bill-form-row {
+    flex-direction: column;
+    gap: 15px;
+  }
+}
+
+/* Wallet Cards Grid */
+.wallet-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+@media (max-width: 768px) {
+  .wallet-cards-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}
+
+/* Landing Page Hero Section Responsive */
+.landing-hero-container {
+  display: grid;
+  grid-template-columns: 1.3fr 0.7fr;
+  gap: 60px;
+  align-items: center;
+  position: relative;
+  z-index: 1;
+  padding: 0;
+}
+
+.landing-hero-buttons {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 60px;
+}
+
+@media (max-width: 768px) {
+  .landing-hero-container {
+    grid-template-columns: 1fr !important;
+    gap: 30px !important;
+  }
+
+  .landing-hero-buttons {
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 40px;
+  }
+
+  .landing-hero-buttons .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .orbit-container {
+    display: none;
+    /* Hide orbital animation on mobile */
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  .landing-hero-container {
+    grid-template-columns: 1fr;
+    gap: 40px;
+  }
+
+  .orbit-container {
+    transform: scale(0.8);
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  .wallet-cards-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .container {
+    padding: 20px 24px;
+  }
+
+  /* Navbar Tablet Adjustments */
+  .navbar {
+    padding: 16px 3%;
+  }
+
+  .navbar-inner {
+    padding: 6px 20px;
+  }
+
+  .nav-brand h1 {
+    font-size: 24px;
+  }
+
+  .nav-brand .logo-symbol {
+    font-size: 56px;
+  }
+
+  /* Dashboard Grid Adjustments */
+  .stat-cards {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+
+  .tab-content-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  /* Footer Adjustments */
+  .footer-juspay {
+    padding: 60px 5% 30px;
+  }
+
+  .footer-juspay-columns {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 30px;
+  }
+}
+
+/* Mobile Styles (max-width: 768px) */
+@media (max-width: 768px) {
+
+  /* Global Mobile Adjustments */
+  body {
+    padding-top: 70px;
+    font-size: 14px;
+  }
+
+  .container {
+    padding: 16px;
+  }
+
+  /* Typography Scaling */
+  h1 {
+    font-size: 24px !important;
+  }
+
+  h2 {
+    font-size: 20px !important;
+  }
+
+  h3 {
+    font-size: 16px !important;
+  }
+
+  /* Navbar Mobile */
+  .navbar {
+    padding: 12px 16px;
+  }
+
+  .navbar-inner {
+    padding: 4px 12px;
+    border-radius: 50px;
+  }
+
+  .nav-brand h1 {
+    font-size: 18px;
+  }
+
+  .nav-brand .logo-symbol {
+    font-size: 40px;
+  }
+
+  .btn-get-started {
+    padding: 8px 16px;
+    font-size: 12px;
+  }
+
+  .btn-login {
+    font-size: 12px;
+  }
+
+  .nav-actions {
+    gap: 12px;
+  }
+
+  .user-avatar {
+    width: 32px;
+    height: 32px;
+    font-size: 12px;
+  }
+
+  /* Dashboard Header */
+  .dashboard-header-glass {
+    flex-direction: column;
+    gap: 16px;
+    padding: 16px !important;
+  }
+
+  .header-left {
+    width: 100%;
+  }
+
+  .greeting-text {
+    font-size: 20px !important;
+  }
+
+  .date-display {
+    font-size: 12px !important;
+    flex-wrap: wrap;
+  }
+
+  .header-controls {
+    width: 100%;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .header-controls button {
+    width: 100%;
+    padding: 10px 16px;
+    font-size: 13px;
+  }
+
+  /* Stat Cards - Single Column */
+  .stat-cards {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    margin: 20px 0;
+  }
+
+  .stat-card {
+    padding: 16px;
+  }
+
+  .stat-card h3 {
+    font-size: 11px;
+  }
+
+  .stat-card p {
+    font-size: 24px;
+  }
+
+  /* Premium Balance Card */
+  .premium-balance-card {
+    padding: 16px;
+  }
+
+  .balance-amount {
+    font-size: 28px !important;
+  }
+
+  /* Wallet Cards - Single Column */
+  .dashboard-grid>div:nth-child(1) {
+    grid-column: 1 / -1;
+  }
+
+  /* Cards General */
+  .card {
+    padding: 16px;
+    border-radius: 16px;
+  }
+
+  .card h3 {
+    font-size: 16px;
+    margin-bottom: 16px;
+  }
+
+  .glass-effect {
+    padding: 16px;
+  }
+
+  /* Buttons */
+  .btn {
+    padding: 10px 20px;
+    font-size: 13px;
+  }
+
+  .btn-primary,
+  .btn-danger {
+    padding: 12px 20px;
+  }
+
+  /* Form Controls */
+  .form-control {
+    padding: 12px 14px;
+    font-size: 14px;
+  }
+
+  .form-group {
+    margin-bottom: 16px;
+  }
+
+  .form-group label {
+    font-size: 11px;
+    margin-bottom: 6px;
+  }
+
+  /* Tab Content Grid - Single Column */
+  .tab-content-grid {
+    grid-template-columns: 1fr !important;
+    gap: 16px;
+  }
+
+  /* Dashboard Main Content */
+  .dash-main-content {
+    padding: 80px 16px 100px 16px;
+  }
+
+  /* Tables - Horizontal Scroll */
+  .glass-table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .glass-table {
+    min-width: 600px;
+  }
+
+  .glass-table th,
+  .glass-table td {
+    padding: 12px 8px;
+    font-size: 12px;
+  }
+
+  /* Toast Notifications */
+  .toast-container {
+    top: 80px;
+    right: 16px;
+    left: 16px;
+  }
+
+  .toast {
+    min-width: auto;
+    max-width: 100%;
+    padding: 12px 16px;
+  }
+
+  .toast-message {
+    font-size: 13px;
+  }
+
+  .toast-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
+  }
+
+  /* Footer Mobile */
+  .footer-juspay {
+    padding: 40px 5% 30px;
+  }
+
+  .footer-juspay-columns {
+    grid-template-columns: 1fr;
+    gap: 30px;
+    margin-bottom: 40px;
+  }
+
+  /* Landing Section */
+  .landing-section {
+    padding: 60px 5% 80px 5%;
+  }
+
+  /* FAB Button */
+  .fab-container {
+    bottom: 90px;
+    right: 16px;
+  }
+
+  .fab-btn {
+    width: 56px;
+    height: 56px;
+    font-size: 20px;
+  }
+
+  /* Auth Pages Mobile */
+  .auth-wrapper {
+    padding: 16px;
+  }
+
+  .auth-card {
+    padding: 32px 24px;
+    border-radius: 20px;
+  }
+
+  .auth-input-group {
+    margin-bottom: 16px;
+  }
+
+  .auth-input {
+    padding: 12px 14px;
+    font-size: 14px;
+  }
+
+  .btn-auth {
+    padding: 14px;
+    font-size: 14px;
+  }
+
+  /* Broadcast Overlay Mobile */
+  .broadcast-box {
+    margin: 16px;
+    padding: 20px;
+  }
+
+  .broadcast-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .broadcast-footer {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .broadcast-footer button {
+    width: 100%;
+  }
+
+  /* Custom Select Mobile */
+  .custom-select-container {
+    min-width: 120px;
+  }
+
+  /* Sparkline Mobile */
+  .sparkline-container {
+    height: 40px;
+  }
+}
+
+/* Extra Small Mobile (max-width: 480px) */
+@media (max-width: 480px) {
+  body {
+    padding-top: 60px;
+  }
+
+  .navbar {
+    padding: 8px 12px;
+  }
+
+  .navbar-inner {
+    padding: 4px 8px;
+  }
+
+  .nav-brand h1 {
+    font-size: 16px;
+  }
+
+  .nav-brand .logo-symbol {
+    font-size: 32px;
+  }
+
+  .btn-get-started {
+    padding: 6px 12px;
+    font-size: 11px;
+  }
+
+  .greeting-text {
+    font-size: 18px !important;
+  }
+
+  .stat-card p {
+    font-size: 20px;
+  }
+
+  .balance-amount {
+    font-size: 24px !important;
+  }
+
+  .card {
+    padding: 12px;
+  }
+
+  .dash-main-content {
+    padding: 70px 12px 100px 12px;
+  }
+
+  .toast-container {
+    top: 70px;
+    right: 12px;
+    left: 12px;
+  }
+
+  .fab-container {
+    bottom: 85px;
+    right: 12px;
+  }
+
+  .fab-btn {
+    width: 52px;
+    height: 52px;
+  }
+}
+
+/* Landscape Mobile Adjustments */
+@media (max-width: 768px) and (orientation: landscape) {
+  .dash-sidebar {
+    height: 60px;
+  }
+
+  .sidebar-item {
+    width: 48px;
+    height: 48px;
+  }
+
+  .dash-main-content {
+    padding-bottom: 80px;
   }
 }
